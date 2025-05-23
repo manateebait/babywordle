@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Custom Wordle (6 Letters)</title>
   <link rel="stylesheet" href="style.css">
-    <style>
+  <style>
     body { font-family: sans-serif; text-align: center; background: #121213; color: #fff; margin: 0; padding: 0 10px; }
     #intro-screen, .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(18, 18, 19, 0.95); color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10; padding: 20px; box-sizing: border-box; }
     .green-box { display: inline-block; background-color: #538d4e; color: #fff; padding: 10px 12px; font-weight: bold; font-size: 1.2em; border-radius: 4px; }
@@ -42,8 +42,8 @@
     #alert { position: absolute; top: 10%; left: 50%; transform: translateX(-50%); background: #333; padding: 12px 24px; border-radius: 4px; font-size: 1.2em; display: none; z-index: 20; }
 
     @media (max-width: 600px) {
-      .tile { width: 48px; height: 48px; font-size: 1.4em; }
-      #game-board { grid-template-columns: repeat(6, 48px); gap: 4px; justify-content: center; max-width: 320px; margin: 0 auto; }
+      .tile { width: 50px; height: 50px; font-size: 1.4em; }
+      #game-board { grid-template-columns: repeat(6, 50px); gap: 6px; justify-content: center; max-width: 360px; margin: 0 auto; }
       #keyboard { max-width: 100%; padding: 0 4px; }
       .keyboard-row { width: 100%; display: flex; justify-content: center; gap: 3px; flex-wrap: nowrap; }
       .keyboard-row button { font-size: 20px; padding: 12px 0; min-width: auto; height: 48px; flex: 1; }
