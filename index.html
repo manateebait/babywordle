@@ -3,26 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Baby Wordle</title>
+  <title>Custom Wordle (6 Letters)</title>
   <link rel="stylesheet" href="style.css">
   <style>
     body { font-family: sans-serif; text-align: center; background: #121213; color: #fff; }
-    #intro-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #121213; color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10; }
+    #intro-screen, .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(18, 18, 19, 0.95); color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10; }
     #game-board { display: grid; grid-template-columns: repeat(6, 60px); gap: 10px; justify-content: center; margin: 20px auto; }
     .tile { width: 60px; height: 60px; border: 2px solid #3a3a3c; display: flex; justify-content: center; align-items: center; font-size: 2em; text-transform: uppercase; background-color: #121213; color: #fff; transition: background-color 0.5s ease, transform 0.3s ease; }
+    .tile.shake { animation: shake 0.5s ease; }
     .tile.flip { animation: flip 0.5s ease forwards; }
-    @keyframes flip {
-      0% { transform: rotateX(0); }
-      50% { transform: rotateX(90deg); }
-      100% { transform: rotateX(0); }
-    }
+    @keyframes flip { 0% { transform: rotateX(0); } 50% { transform: rotateX(90deg); } 100% { transform: rotateX(0); } }
+    @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
     .correct { background-color: #538d4e !important; border-color: #538d4e !important; }
     .present { background-color: #b59f3b !important; border-color: #b59f3b !important; }
     .absent { background-color: #3a3a3c !important; border-color: #3a3a3c !important; }
     #keyboard { display: grid; grid-template-columns: repeat(10, 1fr); max-width: 600px; margin: 20px auto; gap: 5px; }
     button { font-size: 1em; padding: 10px; background: #818384; color: #fff; border: none; border-radius: 5px; cursor: pointer; }
-    .end-screen { display: block; font-size: 2em; margin-top: 20px; }
     .hidden { display: none; }
+    #alert { position: absolute; top: 10%; left: 50%; transform: translateX(-50%); background: #333; padding: 12px 24px; border-radius: 4px; font-size: 1.2em; display: none; z-index: 20; }
   </style>
 </head>
 <body>
@@ -32,11 +30,20 @@
     <button onclick="startGame()">Start Game</button>
   </div>
 
+  <div id="alert">Not a baby name</div>
+
   <h1>Custom Wordle</h1>
   <div id="game-board"></div>
   <div id="keyboard"></div>
-  <div id="win-screen" class="end-screen hidden">🎉 You got it! 🎉</div>
-  <div id="lose-screen" class="end-screen hidden">💀 Better luck next time!</div>
+
+  <div id="win-screen" class="modal hidden">
+    <h2>🎉 You got it! 🎉</h2>
+  </div>
+
+  <div id="lose-screen" class="modal hidden">
+    <h2>💀 Better luck next time!</h2>
+    <button onclick="restartGame()">Try Again</button>
+  </div>
 
   <script>
     const wordLength = 6;
@@ -50,6 +57,7 @@
 
     const board = document.getElementById("game-board");
     const keyboard = document.getElementById("keyboard");
+    const alertBox = document.getElementById("alert");
 
     function createBoard() {
       for (let i = 0; i < maxGuesses * wordLength; i++) {
@@ -90,15 +98,33 @@
       }
     }
 
-    function submitGuess() {
-      if (currentGuess.length !== wordLength || !allowedWords.includes(currentGuess)) return;
+    function showAlert(message) {
+      alertBox.textContent = message;
+      alertBox.style.display = "block";
+      setTimeout(() => { alertBox.style.display = "none"; }, 1500);
+    }
+
+    function shakeRow() {
       const tiles = document.querySelectorAll(".tile");
-      const rowTiles = [];
+      for (let i = 0; i < wordLength; i++) {
+        const tile = tiles[currentRow * wordLength + i];
+        tile.classList.add("shake");
+        setTimeout(() => tile.classList.remove("shake"), 500);
+      }
+    }
+
+    function submitGuess() {
+      if (currentGuess.length !== wordLength) return;
+      if (!allowedWords.includes(currentGuess)) {
+        shakeRow();
+        showAlert("Not a baby name");
+        return;
+      }
+      const tiles = document.querySelectorAll(".tile");
       for (let i = 0; i < wordLength; i++) {
         const index = currentRow * wordLength + i;
         const tile = tiles[index];
         const letter = currentGuess[i];
-        rowTiles.push(tile);
         setTimeout(() => {
           tile.classList.add("flip");
           if (letter === targetWord[i]) {
@@ -143,7 +169,11 @@
     }
 
     function startGame() {
-      document.getElementById("intro-screen").style.display = "none";
+      document.getElementById("intro-screen").classList.add("hidden");
+    }
+
+    function restartGame() {
+      window.location.reload();
     }
 
     fetch("words.json")
