@@ -6,5 +6,5 @@ const WIN_MESSAGE = `
     <p><strong>Time:</strong> 3:17 AM</p>
     <p><strong>Weight:</strong> 7 lbs 8 oz</p>
     <p><strong>Length:</strong> 20.5 inches</p>
-    <p><a href='https://photos.app.goo.gl/BnxmZWCUtiwaN9cN7' target='_blank' style='color: #ADD8E6;'>📸 See the baby!</a></p>
+    <p><a href='https://photos.app.goo.gl/BnxmZWCUtiwaN9cN7' target='_blank' style='color: #57B9FF;'>📸 See the baby!</a></p>
   </div>`;
