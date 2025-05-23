@@ -7,23 +7,36 @@
   <link rel="stylesheet" href="style.css">
   <style>
     body { font-family: sans-serif; text-align: center; background: #121213; color: #fff; }
+    #intro-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #121213; color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10; }
     #game-board { display: grid; grid-template-columns: repeat(6, 60px); gap: 10px; justify-content: center; margin: 20px auto; }
-    .tile { width: 60px; height: 60px; border: 2px solid #3a3a3c; display: flex; justify-content: center; align-items: center; font-size: 2em; text-transform: uppercase; background-color: #121213; color: #fff; }
-    .correct { background-color: #538d4e; border-color: #538d4e; }
-    .present { background-color: #b59f3b; border-color: #b59f3b; }
-    .absent { background-color: #3a3a3c; border-color: #3a3a3c; }
+    .tile { width: 60px; height: 60px; border: 2px solid #3a3a3c; display: flex; justify-content: center; align-items: center; font-size: 2em; text-transform: uppercase; background-color: #121213; color: #fff; transition: background-color 0.5s ease, transform 0.3s ease; }
+    .tile.flip { animation: flip 0.5s ease forwards; }
+    @keyframes flip {
+      0% { transform: rotateX(0); }
+      50% { transform: rotateX(90deg); }
+      100% { transform: rotateX(0); }
+    }
+    .correct { background-color: #538d4e !important; border-color: #538d4e !important; }
+    .present { background-color: #b59f3b !important; border-color: #b59f3b !important; }
+    .absent { background-color: #3a3a3c !important; border-color: #3a3a3c !important; }
     #keyboard { display: grid; grid-template-columns: repeat(10, 1fr); max-width: 600px; margin: 20px auto; gap: 5px; }
-    button { font-size: 1em; padding: 10px; background: #818384; color: #fff; border: none; border-radius: 5px; }
-    .end-screen { display: none; font-size: 2em; margin-top: 20px; }
+    button { font-size: 1em; padding: 10px; background: #818384; color: #fff; border: none; border-radius: 5px; cursor: pointer; }
+    .end-screen { display: block; font-size: 2em; margin-top: 20px; }
     .hidden { display: none; }
   </style>
 </head>
 <body>
+  <div id="intro-screen">
+    <h2>Welcome to Custom Wordle</h2>
+    <p>Guess the 6-letter name in 6 tries.</p>
+    <button onclick="startGame()">Start Game</button>
+  </div>
+
   <h1>Custom Wordle</h1>
   <div id="game-board"></div>
   <div id="keyboard"></div>
-  <div id="win-screen" class="end-screen">🎉 You got it! 🎉</div>
-  <div id="lose-screen" class="end-screen">💀 Better luck next time!</div>
+  <div id="win-screen" class="end-screen hidden">🎉 You got it! 🎉</div>
+  <div id="lose-screen" class="end-screen hidden">💀 Better luck next time!</div>
 
   <script>
     const wordLength = 6;
@@ -32,7 +45,6 @@
     let currentGuess = "";
     let allowedWords = [];
 
-    // Obfuscated version of "name"
     const encodedTarget = [69, 77, 77, 69, 84, 84];
     const targetWord = String.fromCharCode(...encodedTarget).toLowerCase();
 
@@ -53,6 +65,7 @@
       keys.forEach(key => {
         const button = document.createElement("button");
         button.textContent = key;
+        button.id = `key-${key}`;
         button.onclick = () => handleKey(key);
         keyboard.appendChild(button);
       });
@@ -80,27 +93,57 @@
     function submitGuess() {
       if (currentGuess.length !== wordLength || !allowedWords.includes(currentGuess)) return;
       const tiles = document.querySelectorAll(".tile");
+      const rowTiles = [];
       for (let i = 0; i < wordLength; i++) {
         const index = currentRow * wordLength + i;
+        const tile = tiles[index];
         const letter = currentGuess[i];
-        if (letter === targetWord[i]) {
-          tiles[index].classList.add("correct");
-        } else if (targetWord.includes(letter)) {
-          tiles[index].classList.add("present");
-        } else {
-          tiles[index].classList.add("absent");
+        rowTiles.push(tile);
+        setTimeout(() => {
+          tile.classList.add("flip");
+          if (letter === targetWord[i]) {
+            tile.classList.add("correct");
+            updateKey(letter, "correct");
+          } else if (targetWord.includes(letter)) {
+            tile.classList.add("present");
+            updateKey(letter, "present");
+          } else {
+            tile.classList.add("absent");
+            updateKey(letter, "absent");
+          }
+        }, i * 300);
+      }
+      setTimeout(() => {
+        if (currentGuess === targetWord) {
+          document.getElementById("win-screen").classList.remove("hidden");
+          return;
+        }
+        currentRow++;
+        if (currentRow >= maxGuesses) {
+          document.getElementById("lose-screen").classList.remove("hidden");
+          return;
+        }
+        currentGuess = "";
+      }, wordLength * 300);
+    }
+
+    function updateKey(letter, status) {
+      const key = document.getElementById(`key-${letter.toUpperCase()}`);
+      if (!key.classList.contains("correct")) {
+        if (status === "correct") {
+          key.classList.remove("present", "absent");
+          key.classList.add("correct");
+        } else if (status === "present" && !key.classList.contains("present")) {
+          key.classList.remove("absent");
+          key.classList.add("present");
+        } else if (!key.classList.contains("present")) {
+          key.classList.add("absent");
         }
       }
-      if (currentGuess === targetWord) {
-        document.getElementById("win-screen").classList.remove("hidden");
-        return;
-      }
-      currentRow++;
-      if (currentRow >= maxGuesses) {
-        document.getElementById("lose-screen").classList.remove("hidden");
-        return;
-      }
-      currentGuess = "";
+    }
+
+    function startGame() {
+      document.getElementById("intro-screen").style.display = "none";
     }
 
     fetch("words.json")
