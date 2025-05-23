@@ -90,17 +90,29 @@
       }
     }
 
-    function createKeyboard() {
-      const keys = "QWERTYUIOPASDFGHJKLZXCVBNM".split("");
-      keys.push("Enter", "Backspace");
-      keys.forEach(key => {
-        const button = document.createElement("button");
-        button.textContent = key;
-        button.id = `key-${key}`;
-        button.onclick = () => handleKey(key);
-        keyboard.appendChild(button);
-      });
+function createKeyboard() {
+  const rows = [
+    "QWERTYUIOP",
+    "ASDFGHJKL",
+    "EnterZXCVBNMBackspace"
+  ];
+
+  rows.forEach(row => {
+    const rowDiv = document.createElement("div");
+    rowDiv.classList.add("keyboard-row");
+
+    for (let char of row.match(/Enter|Backspace|./g)) {
+      const button = document.createElement("button");
+      button.textContent = char;
+      button.id = `key-${char}`;
+      button.onclick = () => handleKey(char);
+      rowDiv.appendChild(button);
     }
+
+    document.getElementById("keyboard").appendChild(rowDiv);
+  });
+}
+
 
     function handleKey(key) {
       if (key === "Backspace") {
