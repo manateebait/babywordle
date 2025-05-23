@@ -176,8 +176,9 @@
     }
 
     function startGame() {
-      document.getElementById("intro-screen").classList.add("hidden");
-    }
+  const intro = document.getElementById("intro-screen");
+  if (intro) intro.style.display = "none";
+}
 
     function restartGame() {
       window.location.reload();
