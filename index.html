@@ -37,38 +37,37 @@
 </head>
 <body>
   <div id="intro-screen">
-    <h2>
-      <span class="green-box">B</span>
-      <span class="green-box">A</span>
-      <span class="green-box">B</span>
-      <span class="green-box">Y</span>
-      &nbsp;WORDLE
-    </h2>
-    <p>Guess the 6-letter name in 6 tries.</p>
-    <button onclick="startGame()">Start Game</button>
-  </div>
+  <h2>
+    <span class="green-box">B</span>
+    <span class="green-box">A</span>
+    <span class="green-box">B</span>
+    <span class="green-box">Y</span>
+    &nbsp;WORDLE
+  </h2>
+  <p>Guess the 6-letter name in 6 tries.</p>
+  <button onclick="startGame()">Start Game</button>
+</div>
 
-  <div id="alert">Not a baby name</div>
+<div id="alert">Not a baby name</div>
 
-  <h1>      
-      <span class="green-box">B</span>
-      <span class="green-box">A</span>
-      <span class="green-box">B</span>
-      <span class="green-box">Y</span>
-      &nbsp;WORDLE
-  </h1>
-  <div id="game-board"></div>
-  <div id="keyboard"></div>
+<h1>
+  <span class="green-box">B</span>
+  <span class="green-box">A</span>
+  <span class="green-box">B</span>
+  <span class="green-box">Y</span>
+  &nbsp;WORDLE
+</h1>
+<div id="game-board"></div>
+<div id="keyboard"></div>
 
-  <div id="win-screen" class="modal hidden">
-  </div>
+<div id="win-screen" class="modal hidden"></div>
 
-  <div id="lose-screen" class="modal hidden">
-    <h2>Better luck next time!</h2>
-    <button onclick="restartGame()">Try Again</button>
-  </div>
-  <script src="js/win-message.js"></script>
-  <script>
+<div id="lose-screen" class="modal hidden">
+  <h2>💀 Better luck next time!</h2>
+  <button onclick="restartGame()">Try Again</button>
+</div>
+<script src="js/win-message.js"></script>
+<script>
 const wordLength = 6;
 const maxGuesses = 6;
 let currentRow = 0;
@@ -198,6 +197,13 @@ function updateKey(letter, status) {
 
 function startGame() {
   document.getElementById("intro-screen").classList.add("hidden");
+  currentGuess = "";
+  currentRow = 0;
+  board.innerHTML = "";
+  keyboard.innerHTML = "";
+  createBoard();
+  createKeyboard();
+  document.addEventListener("keydown", e => handleKey(e.key));
 }
 
 function restartGame() {
@@ -209,14 +215,6 @@ fetch("words.json")
   .then(data => {
     allowedWords = data.allowedWords.map(w => w.toLowerCase());
   });
-
-function startGame() {
-  document.getElementById("intro-screen").classList.add("hidden");
-  createBoard();
-  createKeyboard();
-  document.addEventListener("keydown", e => handleKey(e.key));
-}
 </script>
-
 </body>
 </html>
