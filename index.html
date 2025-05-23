@@ -3,15 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>
-        <h2>
-      <span class="green-box">B</span>
-      <span class="green-box">A</span>
-      <span class="green-box">B</span>
-      <span class="green-box">Y</span>
-      &nbsp;WORDLE
-    </h2>
-  </title>
+  <title>Baby Stratton Wordle!</title>
   <link rel="stylesheet" href="style.css">
   <style>
     body { font-family: sans-serif; text-align: center; background: #121213; color: #fff; }
@@ -47,12 +39,17 @@
 
   <div id="alert">Not a baby name</div>
 
-  <h1>Custom Wordle</h1>
+  <h1>      
+      <span class="green-box">B</span>
+      <span class="green-box">A</span>
+      <span class="green-box">B</span>
+      <span class="green-box">Y</span>
+      &nbsp;WORDLE
+  </h1>
   <div id="game-board"></div>
   <div id="keyboard"></div>
 
   <div id="win-screen" class="modal hidden">
-    <h2>🎉 You got it! 🎉</h2>
   </div>
 
   <div id="lose-screen" class="modal hidden">
@@ -61,6 +58,7 @@
   </div>
 
   <script>
+    <script src="js/win-message.js"></script>
     const wordLength = 6;
     const maxGuesses = 6;
     let currentRow = 0;
@@ -156,6 +154,7 @@
       }
       setTimeout(() => {
         if (currentGuess === targetWord) {
+          document.getElementById("win-screen").innerHTML = `<h2>${WIN_MESSAGE}</h2>`;
           document.getElementById("win-screen").classList.remove("hidden");
           return;
         }
