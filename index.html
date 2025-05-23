@@ -8,6 +8,7 @@
   <style>
     body { font-family: sans-serif; text-align: center; background: #121213; color: #fff; }
     #intro-screen, .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(18, 18, 19, 0.95); color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10; }
+    .green-box { display: inline-block; background-color: #538d4e; color: #fff; padding: 10px 15px; margin: 0 2px; font-weight: bold; font-size: 1.5em; border-radius: 4px; }
     #game-board { display: grid; grid-template-columns: repeat(6, 60px); gap: 10px; justify-content: center; margin: 20px auto; }
     .tile { width: 60px; height: 60px; border: 2px solid #3a3a3c; display: flex; justify-content: center; align-items: center; font-size: 2em; text-transform: uppercase; background-color: #121213; color: #fff; transition: background-color 0.5s ease, transform 0.3s ease; }
     .tile.shake { animation: shake 0.5s ease; }
@@ -25,7 +26,13 @@
 </head>
 <body>
   <div id="intro-screen">
-    <h2>Welcome to Custom Wordle</h2>
+    <h2>
+      <span class="green-box">B</span>
+      <span class="green-box">A</span>
+      <span class="green-box">B</span>
+      <span class="green-box">Y</span>
+      &nbsp;WORDLE
+    </h2>
     <p>Guess the 6-letter name in 6 tries.</p>
     <button onclick="startGame()">Start Game</button>
   </div>
