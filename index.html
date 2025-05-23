@@ -41,7 +41,16 @@
     .hidden { display: none; }
     #alert { position: absolute; top: 10%; left: 50%; transform: translateX(-50%); background: #333; padding: 12px 24px; border-radius: 4px; font-size: 1.2em; display: none; z-index: 20; }
     @media (max-width: 600px) {
-  .tile { width: 40px; height: 40px; font-size: 1.4em; }
+  .tile { width: 62px; height: 62px; font-size: 1.4em; }
+  #game-board { gap: 5px; justify-content: center; max-width: 100%; }
+  .green-box { font-size: 1em; padding: 6px 8px; }
+  h1 { font-size: 1.5em; margin-top: 20px; }
+  #keyboard { max-width: 100%; padding: 0 4px; }
+  .keyboard-row { width: 100%; display: flex; justify-content: center; gap: 4px; flex-wrap: nowrap; }
+  .keyboard-row button { font-size: 20px; padding: 12px 0; min-width: auto; height: 48px; flex: 1; }
+  #key-Enter { font-size: 12px; }
+  #key-Backspace { font-size: 20px; }
+}
   #game-board { gap: 6px; }
   .green-box { font-size: 1em; padding: 6px 8px; }
   h1 { font-size: 1.5em; margin-top: 20px; }
@@ -127,7 +136,7 @@
 
     for (let key of row.match(/Enter|Backspace|./g)) {
       const button = document.createElement("button");
-      button.textContent = key;
+      button.textContent = key === 'Backspace' ? '⌫' : key;
       button.id = `key-${key}`;
       button.onclick = () => handleKey(key);
       button.classList.add("keyboard-button");
