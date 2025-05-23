@@ -20,8 +20,8 @@
     .present { background-color: #b59f3b !important; border-color: #b59f3b !important; }
     .absent { background-color: #3a3a3c !important; border-color: #3a3a3c !important; }
     #keyboard { display: flex; flex-direction: column; gap: 8px; max-width: 500px; margin: 20px auto; }
-    button { font-size: 1em; padding: 10px 12px; background: #818384; color: #fff; border: none; border-radius: 5px; cursor: pointer; min-width: 36px; }
-.keyboard-button { flex: 0 0 auto; }
+    button { font-size: 1.1em; padding: 14px 8px; background: #818384; color: #fff; border: none; border-radius: 5px; cursor: pointer; min-width: 32px; }
+.keyboard-button { flex: 0 0 auto; margin: 2px; height: 52px; }
     .hidden { display: none; }
     #alert { position: absolute; top: 10%; left: 50%; transform: translateX(-50%); background: #333; padding: 12px 24px; border-radius: 4px; font-size: 1.2em; display: none; z-index: 20; }
     @media (max-width: 600px) {
@@ -65,7 +65,7 @@
   <div id="win-screen" class="modal hidden"></div>
 
   <div id="lose-screen" class="modal hidden">
-    <h2>:) Better luck next time!</h2>
+    <h2>Better luck next time!</h2>
     <button onclick="restartGame()">Try Again</button>
   </div>
   <script src="js/win-message.js"></script>
