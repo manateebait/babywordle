@@ -19,7 +19,7 @@
     .correct { background-color: #538d4e !important; border-color: #538d4e !important; }
     .present { background-color: #b59f3b !important; border-color: #b59f3b !important; }
     .absent { background-color: #3a3a3c !important; border-color: #3a3a3c !important; }
-    #keyboard { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; max-width: 500px; margin: 20px auto; padding: 0 8px; box-sizing: border-box; }
+    #keyboard { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; max-width: 400px; margin: 20px auto; padding: 0 8px; box-sizing: border-box; }
     button {
   font-size: 1em;
   font-weight: bold;
@@ -41,7 +41,16 @@
     .hidden { display: none; }
     #alert { position: absolute; top: 10%; left: 50%; transform: translateX(-50%); background: #333; padding: 12px 24px; border-radius: 4px; font-size: 1.2em; display: none; z-index: 20; }
     @media (max-width: 600px) {
-  .tile { width: 62px; height: 62px; font-size: 1.4em; }
+  .tile { width: 52px; height: 52px; font-size: 1.4em; }
+  #game-board { gap: 5px; justify-content: center; max-width: calc(52px * 6 + 5px * 5 + 40px); margin: 0 auto; }
+  .green-box { font-size: 1em; padding: 6px 8px; }
+  h1 { font-size: 1.5em; margin-top: 20px; }
+  #keyboard { max-width: 100%; padding: 0 4px; }
+  .keyboard-row { width: 100%; display: flex; justify-content: center; gap: 3px; flex-wrap: nowrap; }
+  .keyboard-row button { font-size: 20px; padding: 12px 0; min-width: auto; height: 48px; flex: 1; }
+  #key-Enter { font-size: 12px; flex: 1.2; }
+  #key-Backspace { font-size: 20px; flex: 1.2; }
+}
   #game-board { gap: 5px; justify-content: center; max-width: 100%; }
   .green-box { font-size: 1em; padding: 6px 8px; }
   h1 { font-size: 1.5em; margin-top: 20px; }
