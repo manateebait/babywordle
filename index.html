@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Custom Wordle (6 Letters)</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { font-family: sans-serif; text-align: center; background: #121213; color: #fff; }
+    #game-board { display: grid; grid-template-columns: repeat(6, 60px); gap: 10px; justify-content: center; margin: 20px auto; }
+    .tile { width: 60px; height: 60px; border: 2px solid #3a3a3c; display: flex; justify-content: center; align-items: center; font-size: 2em; text-transform: uppercase; background-color: #121213; color: #fff; }
+    .correct { background-color: #538d4e; border-color: #538d4e; }
+    .present { background-color: #b59f3b; border-color: #b59f3b; }
+    .absent { background-color: #3a3a3c; border-color: #3a3a3c; }
+    #keyboard { display: grid; grid-template-columns: repeat(10, 1fr); max-width: 600px; margin: 20px auto; gap: 5px; }
+    button { font-size: 1em; padding: 10px; background: #818384; color: #fff; border: none; border-radius: 5px; }
+    .end-screen { display: none; font-size: 2em; margin-top: 20px; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <h1>Custom Wordle</h1>
+  <div id="game-board"></div>
+  <div id="keyboard"></div>
+  <div id="win-screen" class="end-screen">🎉 You got it! 🎉</div>
+  <div id="lose-screen" class="end-screen">💀 Better luck next time!</div>
+
+  <script>
+    const wordLength = 6;
+    const maxGuesses = 6;
+    let currentRow = 0;
+    let currentGuess = "";
+    let allowedWords = [];
+
+    // Obfuscated version of "name"
+    const encodedTarget = [69, 77, 77, 69, 84, 84];
+    const targetWord = String.fromCharCode(...encodedTarget).toLowerCase();
+
+    const board = document.getElementById("game-board");
+    const keyboard = document.getElementById("keyboard");
+
+    function createBoard() {
+      for (let i = 0; i < maxGuesses * wordLength; i++) {
+        const tile = document.createElement("div");
+        tile.classList.add("tile");
+        board.appendChild(tile);
+      }
+    }
+
+    function createKeyboard() {
+      const keys = "QWERTYUIOPASDFGHJKLZXCVBNM".split("");
+      keys.push("Enter", "Backspace");
+      keys.forEach(key => {
+        const button = document.createElement("button");
+        button.textContent = key;
+        button.onclick = () => handleKey(key);
+        keyboard.appendChild(button);
+      });
+    }
+
+    function handleKey(key) {
+      if (key === "Backspace") {
+        currentGuess = currentGuess.slice(0, -1);
+      } else if (key === "Enter") {
+        submitGuess();
+      } else if (key.length === 1 && currentGuess.length < wordLength) {
+        currentGuess += key.toLowerCase();
+      }
+      updateBoard();
+    }
+
+    function updateBoard() {
+      const tiles = document.querySelectorAll(".tile");
+      for (let i = 0; i < wordLength; i++) {
+        const index = currentRow * wordLength + i;
+        tiles[index].textContent = currentGuess[i] ? currentGuess[i].toUpperCase() : "";
+      }
+    }
+
+    function submitGuess() {
+      if (currentGuess.length !== wordLength || !allowedWords.includes(currentGuess)) return;
+      const tiles = document.querySelectorAll(".tile");
+      for (let i = 0; i < wordLength; i++) {
+        const index = currentRow * wordLength + i;
+        const letter = currentGuess[i];
+        if (letter === targetWord[i]) {
+          tiles[index].classList.add("correct");
+        } else if (targetWord.includes(letter)) {
+          tiles[index].classList.add("present");
+        } else {
+          tiles[index].classList.add("absent");
+        }
+      }
+      if (currentGuess === targetWord) {
+        document.getElementById("win-screen").classList.remove("hidden");
+        return;
+      }
+      currentRow++;
+      if (currentRow >= maxGuesses) {
+        document.getElementById("lose-screen").classList.remove("hidden");
+        return;
+      }
+      currentGuess = "";
+    }
+
+    fetch("words.json")
+      .then(res => res.json())
+      .then(data => {
+        allowedWords = data.allowedWords.map(w => w.toLowerCase());
+        createBoard();
+        createKeyboard();
+        document.addEventListener("keydown", e => handleKey(e.key));
+      });
+  </script>
+</body>
+</html>
