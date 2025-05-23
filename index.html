@@ -19,12 +19,17 @@
     .correct { background-color: #538d4e !important; border-color: #538d4e !important; }
     .present { background-color: #b59f3b !important; border-color: #b59f3b !important; }
     .absent { background-color: #3a3a3c !important; border-color: #3a3a3c !important; }
-    #keyboard { display: grid; grid-template-columns: repeat(auto-fill, minmax(30px, 1fr)); gap: 5px; max-width: 100%; margin: 20px auto; }
-    button { font-size: 1em; padding: 10px; background: #818384; color: #fff; border: none; border-radius: 5px; cursor: pointer; }
+    #keyboard { display: flex; flex-direction: column; gap: 8px; max-width: 500px; margin: 20px auto; }
+    button { font-size: 1em; padding: 10px 12px; background: #818384; color: #fff; border: none; border-radius: 5px; cursor: pointer; min-width: 36px; flex: 1; }
     .hidden { display: none; }
     #alert { position: absolute; top: 10%; left: 50%; transform: translateX(-50%); background: #333; padding: 12px 24px; border-radius: 4px; font-size: 1.2em; display: none; z-index: 20; }
     @media (max-width: 600px) {
-      .tile { width: 40px; height: 40px; font-size: 1.4em; }
+  .tile { width: 40px; height: 40px; font-size: 1.4em; }
+  #game-board { gap: 6px; }
+  .green-box { font-size: 1em; padding: 6px 8px; }
+  h1 { font-size: 1.5em; margin-top: 20px; }
+  button { font-size: 0.9em; padding: 8px; min-width: 32px; }
+}
       #game-board { gap: 6px; }
       .green-box { font-size: 1em; padding: 6px 8px; }
       h1 { font-size: 1.5em; margin-top: 20px; }
@@ -46,7 +51,7 @@
 
   <div id="alert">Not a baby name</div>
 
-  <h1>      
+  <h1>
       <span class="green-box">B</span>
       <span class="green-box">A</span>
       <span class="green-box">B</span>
@@ -56,11 +61,10 @@
   <div id="game-board"></div>
   <div id="keyboard"></div>
 
-  <div id="win-screen" class="modal hidden">
-  </div>
+  <div id="win-screen" class="modal hidden"></div>
 
   <div id="lose-screen" class="modal hidden">
-    <h2>💀 Better luck next time!</h2>
+    <h2>Better luck next time!</h2>
     <button onclick="restartGame()">Try Again</button>
   </div>
   <script src="js/win-message.js"></script>
@@ -87,15 +91,27 @@
     }
 
     function createKeyboard() {
-      const keys = "QWERTYUIOPASDFGHJKLZXCVBNM".split("");
-      keys.push("Enter", "Backspace");
-      keys.forEach(key => {
-        const button = document.createElement("button");
-        button.textContent = key;
-        button.id = `key-${key}`;
-        button.onclick = () => handleKey(key);
-        keyboard.appendChild(button);
-      });
+  const rows = [
+    "QWERTYUIOP",
+    "ASDFGHJKL",
+    "EnterZXCVBNMBackspace"
+  ];
+
+  rows.forEach(row => {
+    const rowDiv = document.createElement("div");
+    rowDiv.classList.add("keyboard-row");
+
+    for (let key of row.match(/Enter|Backspace|./g)) {
+      const button = document.createElement("button");
+      button.textContent = key;
+      button.id = `key-${key}`;
+      button.onclick = () => handleKey(key);
+      rowDiv.appendChild(button);
+    }
+
+    keyboard.appendChild(rowDiv);
+  });
+}
     }
 
     function handleKey(key) {
@@ -189,9 +205,9 @@
     }
 
     function startGame() {
-  const intro = document.getElementById("intro-screen");
-  if (intro) intro.style.display = "none";
-}
+      const intro = document.getElementById("intro-screen");
+      if (intro) intro.style.display = "none";
+    }
 
     function restartGame() {
       window.location.reload();
