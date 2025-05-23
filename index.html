@@ -208,10 +208,14 @@ fetch("words.json")
   .then(res => res.json())
   .then(data => {
     allowedWords = data.allowedWords.map(w => w.toLowerCase());
-    createBoard();
-    createKeyboard();
-    document.addEventListener("keydown", e => handleKey(e.key));
   });
+
+function startGame() {
+  document.getElementById("intro-screen").classList.add("hidden");
+  createBoard();
+  createKeyboard();
+  document.addEventListener("keydown", e => handleKey(e.key));
+}
 </script>
 
 </body>
