@@ -184,8 +184,18 @@
       }
     }
 
+    function handleWin(timeSpent) {
+      console.log("handleWin triggered, time:", timeSpent);
+    
+      document.getElementById("win-message-container").innerHTML = WIN_MESSAGE;
+      document.getElementById("win-screen").classList.remove("hidden");
+    
+      setTimeout(() => {
+        openNameModal();
+      }, 300);
+    }
+    
     function submitGuess() {
-      console.log("submitGuess called with:", currentGuess);
       if (currentGuess.length !== wordLength) return;
       if (!allowedWords.includes(currentGuess)) {
         shakeRow();
@@ -211,19 +221,15 @@
           }
         }, i * 300);
       }
+
+      console.log("Checking guess:", currentGuess, "vs", targetWord);
+      
       setTimeout(() => {
-      if (currentGuess === targetWord) {
-        const timeSpent = Math.floor((Date.now() - startTime) / 1000);
-      
-        document.getElementById("win-message-container").innerHTML = WIN_MESSAGE;
-        document.getElementById("win-screen").classList.remove("hidden");
-      
-        setTimeout(() => {
-          openNameModal();
-        }, 300);
-      
-        return;
-      }
+        if (currentGuess === targetWord) {
+          const timeSpent = Math.floor((Date.now() - startTime) / 1000);
+          handleWin(timeSpent);
+          return;
+        }
 
         totalWrongGuesses++;
         currentRow++;
