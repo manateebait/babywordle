@@ -155,6 +155,7 @@
 
   <div id="win-screen" class="modal hidden">
     <div id="win-message-container"></div>
+    <button onclick="window.gameLogic.showScoreboard()">See Scoreboard</button>
     <button onclick="window.gameLogic.restartGame()">Play Again</button>
   </div>
 
@@ -165,7 +166,7 @@
 
   <div id="name-modal" class="modal hidden">
     <div class="modal-content">
-      <h3>Enter your name to see the Scoreboard!</h3>
+      <h3>Enter your name to be on the Scoreboard!</h3>
       <input type="text" id="player-name" placeholder="Your name">
       <br>
       <button onclick="window.gameLogic.submitScore()">Submit</button>
@@ -386,8 +387,7 @@
         }
         winScreen.classList.remove("hidden"); // Show win screen
 
-        // Now, immediately open the name modal. No delay needed here.
-        // The name modal's background will naturally obscure the win screen.
+        // Now, immediately open the name modal on top of the win screen
         openNameModal();
     }
 
@@ -395,15 +395,15 @@
         console.log("openNameModal called!");
         nameModal.classList.remove("hidden");
         playerNameInput.focus(); // Give focus to the input field
-        // Removed: winScreen.classList.add("hidden"); -- Keep winScreen visible behind
+        // Removed: winScreen.classList.add("hidden"); -- WIN SCREEN STAYS VISIBLE BEHIND
         finalScoreboardModal.classList.add("hidden"); // Ensure scoreboard is hidden
     }
 
-    function closeNameModal() {
+    function closeNameModal() { // Called when user clicks "No Thanks" or after "Submit"
         console.log("closeNameModal called!");
         nameModal.classList.add("hidden");
         playerNameInput.value = ''; // Clear input field
-        showScoreboard(); // Automatically show scoreboard even if they cancel entering name
+        // DO NOT automatically show scoreboard here. The win-screen should remain.
     }
 
     // Save player result to Firestore
@@ -422,22 +422,23 @@
       }
     }
 
-    // Fetch and display scoreboard
+    // Fetch and display scoreboard (now explicitly called by button)
     async function showScoreboard() {
       console.log("showScoreboard called!");
-      const q = query(collection(db, "scoreboard"), orderBy("guesses"), orderBy("time"));
+      // Order by guesses ascending, then by time ascending
+      const q = query(collection(db, "scoreboard"), orderBy("guesses", "asc"), orderBy("time", "asc"));
       const querySnapshot = await getDocs(q);
 
-      let scoreboardHtml = "<h3>Scoreboard</h3><table><thead><tr><th>Name</th><th>Guesses</th><th>Time (s)</th><th>First Guess</th></tr></thead><tbody>";
+      let scoreboardHtml = "<h3>Scoreboard</h3><table><thead><tr><th>Name</th><th>Guesses</th><th><th>Time (s)</th><th>First Guess</th></tr></thead><tbody>";
       querySnapshot.forEach(doc => {
         const data = doc.data();
         scoreboardHtml += `<tr><td>${data.name}</td><td>${data.guesses}</td><td>${data.time}</td><td>${data.firstGuess || 'N/A'}</td></tr>`;
       });
       scoreboardHtml += "</tbody></table>";
-      scoreboardContentDiv.innerHTML = scoreboardHtml; // Put content into the specific div
+      scoreboardContentDiv.innerHTML = scoreboardHtml;
 
-      // Hide other modals first
-      winScreen.classList.add("hidden"); // Now hide the win screen only when scoreboard is shown
+      // Hide all other major game/modal screens before showing the scoreboard
+      winScreen.classList.add("hidden"); // Hide the win screen when showing scoreboard
       loseScreen.classList.add("hidden");
       nameModal.classList.add("hidden");
 
@@ -458,7 +459,7 @@
         const time = Math.floor((Date.now() - startTime) / 1000);
 
         await saveResult(name, guesses, time, firstGuessWord);
-        closeNameModal(); // This will now call showScoreboard()
+        closeNameModal(); // This will hide the name modal. The win-screen remains visible.
     }
 
 
