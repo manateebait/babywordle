@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Baby Wordle (6 Letters)</title>
   <link rel="stylesheet" href="style.css">
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <style>
     body { font-family: sans-serif; text-align: center; background: #121213; color: #fff; margin: 0; padding: 0 10px; }
     #intro-screen, .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(18, 18, 19, 0.95); color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10; padding: 20px; box-sizing: border-box; }
@@ -77,7 +79,11 @@
   <div id="game-board"></div>
   <div id="keyboard"></div>
 
-  <div id="win-screen" class="modal hidden"></div>
+  <div id="win-screen" class="modal hidden">
+  <div id="win-message-container"></div> 
+  <button onclick="showScoreboard()">See Scoreboard</button>
+  <div id="scoreboard" class="hidden"></div>
+  </div>
 
   <div id="lose-screen" class="modal hidden">
     <h2>Better luck next time!</h2>
@@ -238,5 +244,59 @@
         document.addEventListener("keydown", e => handleKey(e.key));
       });
   </script>
+  <script type="module">
+  // Import the functions you need from the SDKs
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  // 2. Your Firebase configuration (replace these with your actual values)
+const firebaseConfig = {
+  apiKey: "AIzaSyA4ns_9OCK-90S6XZ7mlf20L8aKyqaj1Do",
+  authDomain: "babystratton-e545f.firebaseapp.com",
+  projectId: "babystratton-e545f",
+  storageBucket: "babystratton-e545f.firebasestorage.app",
+  messagingSenderId: "747587536634",
+  appId: "1:747587536634:web:2d19e1e25afd482ca6ab43",
+  measurementId: "G-KBZ295JCMV"
+};
+
+  // 3. Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // 4. Save player result to Firestore
+  async function saveResult(name, guesses, time, firstGuess) {
+    try {
+      await addDoc(collection(db, "scoreboard"), {
+        name,
+        guesses,
+        time,
+        firstGuess,
+        timestamp: Date.now()
+      });
+    } catch (e) {
+      console.error("Error adding document: ", e);
+    }
+  }
+
+  // 5. Fetch and display scoreboard
+  async function showScoreboard() {
+    const q = query(collection(db, "scoreboard"), orderBy("guesses"), orderBy("time"));
+    const querySnapshot = await getDocs(q);
+
+    const scoreboard = document.getElementById("scoreboard");
+    scoreboard.innerHTML = "<h3>Scoreboard</h3><table><tr><th>Name</th><th>Guesses</th><th>Time (s)</th><th>First Guess</th></tr>";
+    querySnapshot.forEach(doc => {
+      const data = doc.data();
+      scoreboard.innerHTML += `<tr><td>${data.name}</td><td>${data.guesses}</td><td>${data.time}</td><td>${data.firstGuess}</td></tr>`;
+    });
+    scoreboard.innerHTML += "</table>";
+    scoreboard.classList.remove("hidden");
+  }
+
+  // Expose these globally
+  window.saveResult = saveResult;
+  window.showScoreboard = showScoreboard;
+</script>
 </body>
 </html>
