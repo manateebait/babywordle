@@ -214,7 +214,7 @@
       if (currentGuess === targetWord) {
         const timeSpent = Math.floor((Date.now() - startTime) / 1000);
       
-        document.getElementById("win-message-container").innerHTML = WIN_MESSAGE;
+        document.getElementById("win-message-container").innerHTML = "you got it!";
         document.getElementById("win-screen").classList.remove("hidden");
       
         setTimeout(() => {
