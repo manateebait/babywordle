@@ -157,8 +157,8 @@
       <h3>Enter your name to be on the Scoreboard!</h3>
       <input type="text" id="player-name" placeholder="Your name">
       <br>
-      <button onclick="window.gameLogic.submitScore()">Submit</button>
-      <button onclick="window.gameLogic.closeNameModal()">No Thanks</button>
+      <button id="submitNameButton" onclick="window.gameLogic.submitScore()">Submit</button>
+      <button id="cancelNameButton" onclick="window.gameLogic.closeNameModal()">No Thanks</button>
     </div>
   </div>
 
@@ -209,6 +209,10 @@
     const startGameButton = document.getElementById("startGameButton");
     const finalScoreboardModal = document.getElementById("final-scoreboard-modal");
     const scoreboardContentDiv = document.getElementById("scoreboard");
+    // New: References to the name modal buttons
+    const submitNameButton = document.getElementById("submitNameButton");
+    const cancelNameButton = document.getElementById("cancelNameButton");
+
 
     function createBoard() {
       for (let i = 0; i < maxGuesses * wordLength; i++) {
@@ -364,13 +368,20 @@
         console.log("openNameModal called!");
         nameModal.classList.remove("hidden");
         playerNameInput.focus();
+        playerNameInput.value = ''; // Clear input on open
+        // Ensure buttons are enabled when modal opens
+        if (submitNameButton) submitNameButton.disabled = false;
+        if (cancelNameButton) cancelNameButton.disabled = false;
         finalScoreboardModal.classList.add("hidden");
     }
 
     function closeNameModal() {
         console.log("closeNameModal called!");
         nameModal.classList.add("hidden");
-        playerNameInput.value = '';
+        playerNameInput.value = ''; // Clear input field
+        // Optionally disable buttons here to prevent immediate re-clicks after closing
+        if (submitNameButton) submitNameButton.disabled = true;
+        if (cancelNameButton) cancelNameButton.disabled = true;
     }
 
     async function saveResult(name, guesses, time, firstGuess) {
@@ -385,23 +396,18 @@
         console.log("Score saved successfully!");
       } catch (e) {
         console.error("Error adding document: ", e);
+        throw e; // Re-throw to be caught by submitScore's try/catch
       }
     }
 
     // showScoreboard function to be called by button
     async function showScoreboard() {
-      console.log("showScoreboard called!"); // Check if this log appears
+      console.log("showScoreboard called!"); // Check if this log appears in console
       try {
-          // Verify that scoreboardContentDiv is not null
-          if (!scoreboardContentDiv) {
-              console.error("scoreboardContentDiv element not found!");
+          // Verify that scoreboardContentDiv and finalScoreboardModal are found
+          if (!scoreboardContentDiv || !finalScoreboardModal) {
+              console.error("Error: Scoreboard elements not found in DOM.");
               showAlert("Error: Scoreboard display area not found.");
-              return;
-          }
-          // Verify that finalScoreboardModal is not null
-          if (!finalScoreboardModal) {
-              console.error("finalScoreboardModal element not found!");
-              showAlert("Error: Scoreboard modal not found.");
               return;
           }
 
@@ -424,7 +430,7 @@
           finalScoreboardModal.classList.remove("hidden"); // Show the scoreboard modal
           console.log("Scoreboard displayed successfully.");
       } catch (error) {
-          console.error("Error fetching scoreboard:", error); // Look for this in the console
+          console.error("Error fetching scoreboard:", error); // Look for this error in the console
           showAlert("Error loading scoreboard. Check console for details.");
       }
     }
@@ -437,30 +443,50 @@
             return;
         }
 
+        // Disable buttons immediately to prevent double-submits
+        if (submitNameButton) submitNameButton.disabled = true;
+        if (cancelNameButton) cancelNameButton.disabled = true;
+
         const guesses = totalWrongGuesses + 1;
         const time = Math.floor((Date.now() - startTime) / 1000);
 
-        await saveResult(name, guesses, time, firstGuessWord);
-        closeNameModal();
+        try {
+            await saveResult(name, guesses, time, firstGuessWord);
+            console.log("Score submission successful, closing modal.");
+        } catch (error) {
+            console.error("Error during score submission:", error);
+            showAlert("Failed to save score. Please try again. (See console for details)");
+            // Re-enable buttons if submission fails so user can try again
+            if (submitNameButton) submitNameButton.disabled = false;
+            if (cancelNameButton) cancelNameButton.disabled = false;
+            return; // Stop here if save fails
+        } finally {
+            // This finally block ensures closeNameModal runs even if saveResult throws an error
+            // However, since we re-enable on catch, this might be redundant if the error path handles it.
+            // Keeping it for robust closing regardless of success/fail,
+            // but the re-enabling might need adjustment based on desired UX on failure.
+        }
+        closeNameModal(); // Close the name modal after successful submission
     }
 
     document.addEventListener("DOMContentLoaded", () => {
-        // Log references to major elements to ensure they are found
         console.log("DOMContentLoaded fired.");
+        // Log references to major elements to ensure they are found
         console.log("introScreen:", introScreen);
         console.log("winScreen:", winScreen);
         console.log("loseScreen:", loseScreen);
         console.log("nameModal:", nameModal);
         console.log("finalScoreboardModal:", finalScoreboardModal);
         console.log("scoreboardContentDiv:", scoreboardContentDiv);
+        console.log("submitNameButton:", submitNameButton);
+        console.log("cancelNameButton:", cancelNameButton);
 
 
-        if (startGameButton) { // Check if button exists before adding listener
+        if (startGameButton) {
             startGameButton.addEventListener("click", startGame);
         } else {
             console.error("startGameButton not found!");
         }
-
 
         fetch("words.json")
             .then(res => {
