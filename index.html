@@ -69,6 +69,8 @@
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
         max-width: 90%;
         width: 300px;
+        position: relative; /* Crucial for its own z-index context */
+        z-index: 11; /* Slightly higher than the modal background */
     }
     #name-modal input[type="text"] {
         padding: 10px;
@@ -124,13 +126,13 @@
 
   <div id="win-screen" class="modal hidden">
     <div id="win-message-container"></div>
-    <button onclick="showScoreboard()">See Scoreboard</button>
+    <button onclick="window.gameLogic.showScoreboard()">See Scoreboard</button>
     <div id="scoreboard" class="hidden"></div>
   </div>
 
   <div id="lose-screen" class="modal hidden">
     <h2>Better luck next time!</h2>
-    <button onclick="restartGame()">Try Again</button>
+    <button onclick="window.gameLogic.restartGame()">Try Again</button>
   </div>
 
   <div id="name-modal" class="modal hidden">
@@ -138,17 +140,37 @@
       <h3>Enter your name</h3>
       <input type="text" id="player-name" placeholder="Your name">
       <br>
-      <button onclick="submitScore()">Submit</button>
-      <button onclick="closeNameModal()">Cancel</button>
+      <button onclick="window.gameLogic.submitScore()">Submit</button>
+      <button onclick="window.gameLogic.closeNameModal()">Cancel</button>
     </div>
   </div>
 
   <script src="js/win-message.js"></script>
-  <script>
-    // GLOBAL VARIABLES (accessible by both script blocks)
+
+  <script type="module">
+    // Import Firebase functions
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    // Firebase configuration (replace with your actual values)
+    const firebaseConfig = {
+      apiKey: "AIzaSyA4ns_9OCK-90S6XZ7mlf20L8aKyqaj1Do",
+      authDomain: "babystratton-e545f.firebaseapp.com",
+      projectId: "babystratton-e545f",
+      storageBucket: "babystratton-e545f.firebasestorage.app",
+      messagingSenderId: "747587536634",
+      appId: "1:747587536634:web:2d19e1e25afd482ca6ab43",
+      measurementId: "G-KBZ295JCMV"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // --- Game State Variables ---
     let startTime = Date.now();
     let totalWrongGuesses = 0;
-    let firstGuessWord = null; // Assuming this gets set somewhere, otherwise it will be null in Firebase
+    let firstGuessWord = null;
     const wordLength = 6;
     const maxGuesses = 6;
     let currentRow = 0;
@@ -157,17 +179,20 @@
     const encodedTarget = [69, 77, 77, 69, 84, 84]; // EMMETT
     const targetWord = String.fromCharCode(...encodedTarget).toLowerCase();
 
-    // DOM Elements
+    // --- DOM Element References ---
     const board = document.getElementById("game-board");
     const keyboard = document.getElementById("keyboard");
     const alertBox = document.getElementById("alert");
-    const introScreen = document.getElementById("intro-screen"); // Get intro screen reference
+    const introScreen = document.getElementById("intro-screen");
     const winScreen = document.getElementById("win-screen");
     const loseScreen = document.getElementById("lose-screen");
-    const nameModal = document.getElementById("name-modal"); // Get name modal reference
+    const nameModal = document.getElementById("name-modal");
+    const winMessageContainer = document.getElementById("win-message-container");
+    const scoreboardDiv = document.getElementById("scoreboard");
+    const playerNameInput = document.getElementById("player-name");
+
 
     // --- Core Game Functions ---
-
     function createBoard() {
       for (let i = 0; i < maxGuesses * wordLength; i++) {
         const tile = document.createElement("div");
@@ -206,10 +231,6 @@
         submitGuess();
       } else if (key.length === 1 && currentGuess.length < wordLength) {
         currentGuess += key.toLowerCase();
-        // If this is the first guess and firstGuessWord is not set, set it
-        if (currentRow === 0 && firstGuessWord === null && currentGuess.length === wordLength) {
-            firstGuessWord = currentGuess;
-        }
       }
       updateBoard();
     }
@@ -225,7 +246,7 @@
     function showAlert(message) {
       alertBox.textContent = message;
       alertBox.style.display = "block";
-      setTimeout(() => { alertBox.style.display = "none"; }, 1500);
+      setTimeout(() => { alert relentlessly.display = "none"; }, 1500);
     }
 
     function shakeRow() {
@@ -237,7 +258,7 @@
       }
     }
 
-    function submitGuess() {
+    async function submitGuess() { // Made async because saveResult is async
       if (currentGuess.length !== wordLength) return;
       if (!allowedWords.includes(currentGuess)) {
         shakeRow();
@@ -245,7 +266,7 @@
         return;
       }
 
-      // If this is the first valid guess, set firstGuessWord
+      // Set firstGuessWord if this is the very first successful guess
       if (currentRow === 0 && firstGuessWord === null) {
           firstGuessWord = currentGuess;
       }
@@ -279,7 +300,7 @@
         totalWrongGuesses++;
         currentRow++;
         if (currentRow >= maxGuesses) {
-          loseScreen.classList.remove("hidden"); // Use the reference
+          loseScreen.classList.remove("hidden");
           return;
         }
         currentGuess = "";
@@ -301,94 +322,53 @@
       }
     }
 
+    // --- Modal Control Functions & Firebase Interaction (All within the module) ---
+
+    // This function will be exposed globally
     function startGame() {
-      introScreen.classList.add("hidden"); // Hide the intro screen
+      introScreen.classList.add("hidden");
+      startTime = Date.now(); // Reset start time when game begins
+      totalWrongGuesses = 0;
+      firstGuessWord = null;
+      currentRow = 0;
+      currentGuess = "";
+      // Potentially clear board and reset keys if not done by reload
+      // For simplicity, restartGame does a reload now
     }
 
+    // This function will be exposed globally
     function restartGame() {
       window.location.reload();
     }
 
-    // --- Modal Control Functions (Now defined in this main script block) ---
-    // Make sure these are defined BEFORE they are called by handleWin or other functions
     function handleWin() {
         console.log("handleWin triggered");
-        const timeSpent = Math.floor((Date.now() - startTime) / 1000);
+        // WIN_MESSAGE needs to be globally available from win-message.js
+        if (typeof WIN_MESSAGE !== 'undefined') {
+            winMessageContainer.innerHTML = WIN_MESSAGE;
+        } else {
+            winMessageContainer.innerHTML = "You Win!"; // Fallback
+        }
+        winScreen.classList.remove("hidden");
 
-        // Display win screen first
-        document.getElementById("win-message-container").innerHTML = WIN_MESSAGE; // WIN_MESSAGE should come from win-message.js
-        winScreen.classList.remove("hidden"); // Show win screen
-
-        // Then, after a short delay, open the name modal
         setTimeout(() => {
             openNameModal();
-        }, 1000); // Increased delay for better user experience
+        }, 1000);
     }
 
     function openNameModal() {
-        console.log("openNameModal called!"); // For debugging
+        console.log("openNameModal called!");
         nameModal.classList.remove("hidden");
+        playerNameInput.focus(); // Give focus to the input field
     }
 
     function closeNameModal() {
-        console.log("closeNameModal called!"); // For debugging
+        console.log("closeNameModal called!");
         nameModal.classList.add("hidden");
-        document.getElementById("player-name").value = ''; // Clear input
+        playerNameInput.value = ''; // Clear input
     }
 
-    async function submitScore() {
-        const name = document.getElementById("player-name").value.trim();
-        if (!name) {
-            alert("Please enter a name."); // Using alert for now, can be replaced with custom alert
-            return;
-        }
-
-        const guesses = totalWrongGuesses + 1; // Corrected to be accurate guess count
-        const time = Math.floor((Date.now() - startTime) / 1000);
-
-        // Call saveResult which is defined in the module script, but exposed globally
-        await window.saveResult(name, guesses, time, firstGuessWord);
-        closeNameModal();
-        window.showScoreboard(); // Call showScoreboard which is exposed globally
-    }
-
-    // Initial setup when the page loads
-    fetch("words.json")
-      .then(res => res.json())
-      .then(data => {
-        allowedWords = data.allowedWords.map(w => w.toLowerCase());
-        createBoard();
-        createKeyboard();
-        document.addEventListener("keydown", e => handleKey(e.key));
-        // Ensure intro screen is visible and other modals are hidden on initial load
-        introScreen.classList.remove("hidden"); // Make sure intro is visible
-        winScreen.classList.add("hidden");
-        loseScreen.classList.add("hidden");
-        nameModal.classList.add("hidden"); // Explicitly ensure name modal is hidden
-      })
-      .catch(error => console.error("Error loading words.json:", error)); // Add error handling for fetch
-  </script>
-
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs, query, orderBy } from "https://www.www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-    // 2. Your Firebase configuration (replace these with your actual values)
-    const firebaseConfig = {
-      apiKey: "AIzaSyA4ns_9OCK-90S6XZ7mlf20L8aKyqaj1Do",
-      authDomain: "babystratton-e545f.firebaseapp.com",
-      projectId: "babystratton-e545f",
-      storageBucket: "babystratton-e545f.firebasestorage.app",
-      messagingSenderId: "747587536634",
-      appId: "1:747587536634:web:2d19e1e25afd482ca6ab43",
-      measurementId: "G-KBZ295JCMV"
-    };
-
-    // 3. Initialize Firebase
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    // 4. Save player result to Firestore
+    // Save player result to Firestore
     async function saveResult(name, guesses, time, firstGuess) {
       try {
         await addDoc(collection(db, "scoreboard"), {
@@ -404,25 +384,87 @@
       }
     }
 
-    // 5. Fetch and display scoreboard
+    // Fetch and display scoreboard
     async function showScoreboard() {
       const q = query(collection(db, "scoreboard"), orderBy("guesses"), orderBy("time"));
       const querySnapshot = await getDocs(q);
 
-      const scoreboard = document.getElementById("scoreboard");
       let scoreboardHtml = "<h3>Scoreboard</h3><table><thead><tr><th>Name</th><th>Guesses</th><th>Time (s)</th><th>First Guess</th></tr></thead><tbody>";
       querySnapshot.forEach(doc => {
         const data = doc.data();
         scoreboardHtml += `<tr><td>${data.name}</td><td>${data.guesses}</td><td>${data.time}</td><td>${data.firstGuess || 'N/A'}</td></tr>`;
       });
       scoreboardHtml += "</tbody></table>";
-      scoreboard.innerHTML = scoreboardHtml;
-      scoreboard.classList.remove("hidden");
+      scoreboardDiv.innerHTML = scoreboardHtml;
+      scoreboardDiv.classList.remove("hidden");
     }
 
-    // Expose these functions to the global window object so the main script can call them
-    window.saveResult = saveResult;
-    window.showScoreboard = showScoreboard;
+    // Function called by the submit button in the modal
+    async function submitScore() {
+        console.log("Submit button clicked!"); // For debugging
+        const name = playerNameInput.value.trim();
+        if (!name) {
+            showAlert("Please enter a name."); // Use your custom alert for consistency
+            return;
+        }
+
+        const guesses = totalWrongGuesses + 1;
+        const time = Math.floor((Date.now() - startTime) / 1000);
+
+        await saveResult(name, guesses, time, firstGuessWord);
+        closeNameModal();
+        showScoreboard();
+    }
+
+
+    // --- Initialization Logic ---
+    // This runs AFTER the HTML is parsed and the module script is ready.
+    document.addEventListener("DOMContentLoaded", () => {
+        fetch("words.json")
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                return res.json();
+            })
+            .then(data => {
+                allowedWords = data.allowedWords.map(w => w.toLowerCase());
+                createBoard();
+                createKeyboard();
+                document.addEventListener("keydown", e => handleKey(e.key));
+
+                // Ensure initial screen states
+                introScreen.classList.remove("hidden");
+                winScreen.classList.add("hidden");
+                loseScreen.classList.add("hidden");
+                nameModal.classList.add("hidden");
+            })
+            .catch(error => console.error("Error loading words.json:", error));
+    });
+
+
+    // Expose necessary functions to the global window object.
+    // We'll create a single `gameLogic` object to hold them cleanly.
+    window.gameLogic = {
+        startGame: startGame,
+        restartGame: restartGame,
+        submitScore: submitScore,
+        openNameModal: openNameModal, // Though only called internally now
+        closeNameModal: closeNameModal,
+        showScoreboard: showScoreboard,
+        // You might consider exposing handleKey if you plan to use it outside
+        // of keyboard events (e.g., custom on-screen keyboard), but generally
+        // keep internal functions internal.
+        handleKey: handleKey // Exposing handleKey for the virtual keyboard onclicks
+    };
+
+    // Make sure the virtual keyboard buttons call the exposed handleKey
+    // This is crucial for your dynamic keyboard buttons.
+    // The createKeyboard function uses `() => handleKey(key)` which directly refers to
+    // the function within this module scope, so the `window.gameLogic.handleKey` exposure
+    // is primarily for the <button onclick=""> attributes or if you had external script calling it.
+    // For the HTML onclick attributes, we need to explicitly use window.gameLogic.functionName.
+
   </script>
 </body>
 </html>
