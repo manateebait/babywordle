@@ -58,7 +58,7 @@
     .hidden { display: none !important; }
     #alert { position: absolute; top: 10%; left: 50%; transform: translateX(-50%); background: #333; padding: 12px 24px; border-radius: 4px; font-size: 1.2em; display: none; z-index: 20; }
     
-    /* Name Modal Specific Styles (Reverted to a more stable state) */
+    /* Name Modal Specific Styles */
     #name-modal .modal-content {
         background:#1e1e1f;
         padding: 20px;
@@ -69,13 +69,11 @@
         width: 300px;
         position: relative;
         z-index: 11;
-        /* Reverting these as they caused issues on PC. Mobile often handles this better inherently. */
-        /* max-height: 80vh;  */
+        /* Reverted these for mobile keyboard compatibility */
+        /* max-height: 80vh; */ 
         /* overflow-y: auto; */
-        /* overflow-x: hidden; */
-        /* display: flex; */
-        /* flex-direction: column; */
-        /* justify-content: space-between; */
+        overflow-x: hidden; /* Keep horizontal scroll hidden */
+        /* Removed flex-direction/justify-content to let browser handle scroll more naturally */
     }
     #name-modal input[type="text"] {
         padding: 10px;
@@ -105,9 +103,8 @@
         max-width: 80%; /* Scoreboard content fills 80% of the modal */
         width: 500px; /* Max width for desktop */
         color: #eee;
-        display: flex;
+        display: flex; /* Flex for main modal content */
         flex-direction: column;
-        /* Removed max-height/overflow from here */
     }
     /* Dedicated container for the scrollable table */
     #scoreboard-table-container {
@@ -115,7 +112,7 @@
         overflow-y: auto; /* Enable vertical scroll */
         overflow-x: hidden; /* Prevent horizontal scroll */
         margin-bottom: 10px; /* Space between table and button */
-        flex-grow: 1; /* Allows it to take available height */
+        flex-grow: 1; /* Allow container to grow if needed */
     }
     #scoreboard table {
         width: 100%;
@@ -423,6 +420,11 @@
         if (submitNameButton) submitNameButton.disabled = false;
         if (cancelNameButton) cancelNameButton.disabled = false;
         finalScoreboardModal.classList.add("hidden");
+        // NEW: Scroll the window/body to ensure the input and buttons are visible
+        // This is a common mobile solution for keyboard overlays.
+        setTimeout(() => {
+            playerNameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100); // Small delay to allow keyboard to appear
     }
 
     function closeNameModal() {
@@ -454,8 +456,8 @@
     function formatTime(seconds) {
         const minutes = Math.floor(seconds / 60);
         const remainingSeconds = seconds % 60;
-        const formattedMinutes = String(minutes).padStart(1, '0'); // No leading zero if single digit for minutes
-        const formattedSeconds = String(remainingSeconds).padStart(2, '0'); // Always two digits for seconds
+        const formattedMinutes = String(minutes).padStart(1, '0');
+        const formattedSeconds = String(remainingSeconds).padStart(2, '0');
         return `${formattedMinutes}:${formattedSeconds}`;
     }
 
@@ -472,25 +474,24 @@
           const q = query(collection(db, "scoreboard"), orderBy("guesses", "asc"), orderBy("time", "asc"));
           const querySnapshot = await getDocs(q);
 
-          let scoreboardHtml = "<h3>Scoreboard</h3><table><thead><tr><th>Name</th><th>Guesses</th><th>Time (s)</th><th>First Guess</th></tr></thead><tbody>";
+          let scoreboardHtml = "<h3>Scoreboard</h3><table><thead><tr><th>Name</th><th>Guesses</th><th>Time</th><th>First Guess</th></tr></thead><tbody>"; // Removed (s)
           let rowCount = 0;
           querySnapshot.forEach(doc => {
             if (rowCount < 10) { // Limit to 10 rows
                 const data = doc.data();
-                // Use formatTime for the time column
                 scoreboardHtml += `<tr><td>${data.name}</td><td>${data.guesses}</td><td>${formatTime(data.time)}</td><td>${data.firstGuess || 'N/A'}</td></tr>`;
                 rowCount++;
             }
           });
           scoreboardHtml += "</tbody></table>";
-          scoreboardTableContainer.innerHTML = scoreboardHtml; // Put content into the specific container
+          scoreboardTableContainer.innerHTML = scoreboardHtml;
 
           // Hide other modals when scoreboard is shown
           winScreen.classList.add("hidden");
           loseScreen.classList.add("hidden");
           nameModal.classList.add("hidden");
 
-          finalScoreboardModal.classList.remove("hidden"); // Show the scoreboard modal
+          finalScoreboardModal.classList.remove("hidden");
           console.log("Scoreboard displayed successfully.");
       } catch (error) {
           console.error("Error fetching scoreboard:", error);
@@ -524,14 +525,13 @@
             if (cancelNameButton) cancelNameButton.disabled = false;
             return;
         }
-        closeNameModal(); // Close the name modal after successful submission
+        closeNameModal();
     }
 
-    // Function to go back from scoreboard to win screen
     function backToWinScreen() {
         console.log("Back to Win Screen button clicked.");
-        finalScoreboardModal.classList.add("hidden"); // Hide scoreboard
-        winScreen.classList.remove("hidden"); // Show win screen
+        finalScoreboardModal.classList.add("hidden");
+        winScreen.classList.remove("hidden");
     }
 
 
