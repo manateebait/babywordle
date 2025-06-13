@@ -72,6 +72,7 @@
         /* --- NEW: Make name modal content scrollable for mobile keyboard --- */
         max-height: 80vh; /* Adjust as needed, e.g., 80% of viewport height */
         overflow-y: auto;
+        overflow-x: hidden; /* Prevent horizontal scroll */
         display: flex; /* Use flex for internal layout */
         flex-direction: column;
         justify-content: space-between; /* Push buttons to bottom if content is short */
@@ -89,6 +90,7 @@
     #name-modal .modal-buttons { /* NEW: Wrapper for buttons */
         margin-top: auto; /* Pushes buttons to bottom if flex column */
         padding-top: 15px; /* Space between input and buttons */
+        text-align: center; /* Center the buttons */
     }
     #name-modal button {
         margin: 5px;
@@ -107,6 +109,7 @@
         /* --- NEW: Fixed height and scroll for scoreboard table --- */
         max-height: 80vh; /* Adjust as needed */
         overflow-y: auto;
+        overflow-x: hidden; /* Prevent horizontal scroll */
         display: flex; /* Use flex for internal layout */
         flex-direction: column;
     }
@@ -246,7 +249,7 @@
     const startGameButton = document.getElementById("startGameButton");
     const finalScoreboardModal = document.getElementById("final-scoreboard-modal");
     // NEW: The div that will contain the scrollable scoreboard table
-    const scoreboardTableContainer = document.getElementById("scoreboard-table-container"); 
+    const scoreboardTableContainer = document.getElementById("scoreboard-table-container");
     // References to the name modal buttons
     const submitNameButton = document.getElementById("submitNameButton");
     const cancelNameButton = document.getElementById("cancelNameButton");
@@ -416,10 +419,8 @@
     function closeNameModal() {
         console.log("closeNameModal called!");
         nameModal.classList.add("hidden");
-        playerNameInput.value = ''; // Clear input field
-        // Optionally disable buttons here to prevent immediate re-clicks after closing
-        if (submitNameButton) submitNameButton.disabled = true;
-        if (cancelNameButton) cancelNameButton.disabled = true;
+        playerNameInput.value = '';
+        // DO NOT automatically show scoreboard here. The win-screen should remain.
     }
 
     async function saveResult(name, guesses, time, firstGuess) {
@@ -438,10 +439,11 @@
       }
     }
 
-    // This function is now explicitly called by the 'See Scoreboard' button
+    // showScoreboard function to be called by button
     async function showScoreboard() {
-      console.log("showScoreboard called!");
+      console.log("showScoreboard called!"); // Check if this log appears
       try {
+          // Verify that scoreboardTableContainer and finalScoreboardModal are found
           if (!scoreboardTableContainer || !finalScoreboardModal) {
               console.error("Error: Scoreboard elements not found in DOM.");
               showAlert("Error: Scoreboard display area not found.");
@@ -476,6 +478,14 @@
       }
     }
 
+    // NEW: Function to go back from scoreboard to win screen
+    function backToWinScreen() {
+        console.log("Back to Win Screen button clicked.");
+        finalScoreboardModal.classList.add("hidden"); // Hide scoreboard
+        winScreen.classList.remove("hidden"); // Show win screen
+    }
+
+
     async function submitScore() {
         console.log("Submit button clicked!");
         const name = playerNameInput.value.trim();
@@ -500,21 +510,19 @@
             // Re-enable buttons if submission fails so user can try again
             if (submitNameButton) submitNameButton.disabled = false;
             if (cancelNameButton) cancelNameButton.disabled = false;
-            return;
+            return; // Stop here if save fails
+        } finally {
+            // This finally block ensures closeNameModal runs even if saveResult throws an error
+            // However, since we re-enable on catch, this might be redundant if the error path handles it.
+            // Keeping it for robust closing regardless of success/fail,
+            // but the re-enabling might need adjustment based on desired UX on failure.
         }
         closeNameModal(); // Close the name modal after successful submission
     }
 
-    // NEW: Function to go back from scoreboard to win screen
-    function backToWinScreen() {
-        console.log("Back to Win Screen button clicked.");
-        finalScoreboardModal.classList.add("hidden"); // Hide scoreboard
-        winScreen.classList.remove("hidden"); // Show win screen
-    }
-
-
     document.addEventListener("DOMContentLoaded", () => {
         console.log("DOMContentLoaded fired.");
+        // Log references to major elements to ensure they are found
         console.log("introScreen:", introScreen);
         console.log("winScreen:", winScreen);
         console.log("loseScreen:", loseScreen);
