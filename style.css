@@ -68,3 +68,23 @@ button {
 .hidden {
   display: none;
 }
+
+#scoreboard table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  font-size: 1em;
+  background: #1e1e1e;
+}
+
+#scoreboard th,
+#scoreboard td {
+  padding: 8px 12px;
+  border: 1px solid #444;
+  text-align: center;
+}
+
+#scoreboard th {
+  background-color: #333;
+}
+
