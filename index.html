@@ -91,6 +91,9 @@
   </div>
   <script src="js/win-message.js"></script>
   <script>
+    let startTime = Date.now();
+    let totalWrongGuesses = 0;
+    let firstGuessWord = null;
     const wordLength = 6;
     const maxGuesses = 6;
     let currentRow = 0;
@@ -198,10 +201,22 @@
       }
       setTimeout(() => {
         if (currentGuess === targetWord) {
-          document.getElementById("win-screen").innerHTML = `<h2>${WIN_MESSAGE}</h2>`;
-          document.getElementById("win-screen").classList.remove("hidden");
-          return;
-        }
+        const timeSpent = Math.floor((Date.now() - startTime) / 1000);
+      
+        document.getElementById("win-message-container").innerHTML = WIN_MESSAGE;
+        document.getElementById("win-screen").classList.remove("hidden");
+      
+        setTimeout(() => {
+          const name = prompt("Nice work! Enter your name to see the scoreboard:");
+          if (name) {
+            saveResult(name, totalWrongGuesses + 1, timeSpent, firstGuessWord); // +1 for the winning guess
+          }
+        }, 500);
+      
+        return;
+      }
+
+        totalWrongGuesses++;
         currentRow++;
         if (currentRow >= maxGuesses) {
           document.getElementById("lose-screen").classList.remove("hidden");
