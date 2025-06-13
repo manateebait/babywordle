@@ -9,7 +9,24 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <style>
     body { font-family: sans-serif; text-align: center; background: #121213; color: #fff; margin: 0; padding: 0 10px; }
-    #intro-screen, .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(18, 18, 19, 0.95); color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10; padding: 20px; box-sizing: border-box; }
+    /* This style makes intro-screen and ALL .modal elements fixed and centered */
+    /* We'll use .hidden to control their visibility */
+    #intro-screen, .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(18, 18, 19, 0.95);
+        color: #fff;
+        display: flex; /* Changed to flex for proper centering when visible */
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 10;
+        padding: 20px;
+        box-sizing: border-box;
+    }
     .green-box { display: inline-block; background-color: #538d4e; color: #fff; padding: 10px 12px; font-weight: bold; font-size: 1.2em; border-radius: 4px; }
     h1 { margin-top: 30px; margin-bottom: 10px; font-size: 1.8em; }
     #game-board { display: grid; grid-template-columns: repeat(6, 60px); gap: 6px; justify-content: center; margin: 30px auto; max-width: 600px; }
@@ -40,8 +57,34 @@
       align-items: center;
     }
     .keyboard-button { flex: none; }
-    .hidden { display: none; }
+    .hidden { display: none !important; } /* Added !important to ensure it overrides 'display: flex' from .modal */
     #alert { position: absolute; top: 10%; left: 50%; transform: translateX(-50%); background: #333; padding: 12px 24px; border-radius: 4px; font-size: 1.2em; display: none; z-index: 20; }
+
+    /* Custom styling for the name modal content to make it look clean */
+    #name-modal .modal-content {
+        background:#1e1e1f;
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        max-width: 90%;
+        width: 300px;
+    }
+    #name-modal input[type="text"] {
+        padding: 10px;
+        width: calc(100% - 20px); /* Account for padding */
+        margin: 15px 0;
+        border: 1px solid #555;
+        border-radius: 4px;
+        background-color: #333;
+        color: #fff;
+        font-size: 1em;
+    }
+    #name-modal button {
+        margin: 5px;
+        padding: 10px 20px;
+    }
+
 
     @media (max-width: 600px) {
       .tile { width: 50px; height: 50px; }
@@ -70,42 +113,60 @@
   <div id="alert">Not a baby name</div>
 
   <h1>
-      <span class="green-box">B</span>
-      <span class="green-box">A</span>
-      <span class="green-box">B</span>
-      <span class="green-box">Y</span>
-      &nbsp;WORDLE
+    <span class="green-box">B</span>
+    <span class="green-box">A</span>
+    <span class="green-box">B</span>
+    <span class="green-box">Y</span>
+    &nbsp;WORDLE
   </h1>
   <div id="game-board"></div>
   <div id="keyboard"></div>
 
   <div id="win-screen" class="modal hidden">
-  <div id="win-message-container"></div> 
-  <button onclick="showScoreboard()">See Scoreboard</button>
-  <div id="scoreboard" class="hidden"></div>
+    <div id="win-message-container"></div>
+    <button onclick="showScoreboard()">See Scoreboard</button>
+    <div id="scoreboard" class="hidden"></div>
   </div>
 
   <div id="lose-screen" class="modal hidden">
     <h2>Better luck next time!</h2>
     <button onclick="restartGame()">Try Again</button>
   </div>
+
+  <div id="name-modal" class="modal hidden">
+    <div class="modal-content">
+      <h3>Enter your name</h3>
+      <input type="text" id="player-name" placeholder="Your name">
+      <br>
+      <button onclick="submitScore()">Submit</button>
+      <button onclick="closeNameModal()">Cancel</button>
+    </div>
+  </div>
+
   <script src="js/win-message.js"></script>
   <script>
+    // GLOBAL VARIABLES (accessible by both script blocks)
     let startTime = Date.now();
     let totalWrongGuesses = 0;
-    let firstGuessWord = null;
+    let firstGuessWord = null; // Assuming this gets set somewhere, otherwise it will be null in Firebase
     const wordLength = 6;
     const maxGuesses = 6;
     let currentRow = 0;
     let currentGuess = "";
     let allowedWords = [];
-
-    const encodedTarget = [69, 77, 77, 69, 84, 84];
+    const encodedTarget = [69, 77, 77, 69, 84, 84]; // EMMETT
     const targetWord = String.fromCharCode(...encodedTarget).toLowerCase();
 
+    // DOM Elements
     const board = document.getElementById("game-board");
     const keyboard = document.getElementById("keyboard");
     const alertBox = document.getElementById("alert");
+    const introScreen = document.getElementById("intro-screen"); // Get intro screen reference
+    const winScreen = document.getElementById("win-screen");
+    const loseScreen = document.getElementById("lose-screen");
+    const nameModal = document.getElementById("name-modal"); // Get name modal reference
+
+    // --- Core Game Functions ---
 
     function createBoard() {
       for (let i = 0; i < maxGuesses * wordLength; i++) {
@@ -116,28 +177,27 @@
     }
 
     function createKeyboard() {
-  const rows = [
-    "QWERTYUIOP",
-    "ASDFGHJKL",
-    "EnterZXCVBNMBackspace"
-  ];
+      const rows = [
+        "QWERTYUIOP",
+        "ASDFGHJKL",
+        "EnterZXCVBNMBackspace"
+      ];
 
-  rows.forEach(row => {
-    const rowDiv = document.createElement("div");
-    rowDiv.classList.add("keyboard-row");
+      rows.forEach(row => {
+        const rowDiv = document.createElement("div");
+        rowDiv.classList.add("keyboard-row");
 
-    for (let key of row.match(/Enter|Backspace|./g)) {
-      const button = document.createElement("button");
-      button.textContent = key === 'Backspace' ? '⌫' : key;
-      button.id = `key-${key}`;
-      button.onclick = () => handleKey(key);
-      button.classList.add("keyboard-button");
-      rowDiv.appendChild(button);
+        for (let key of row.match(/Enter|Backspace|./g)) {
+          const button = document.createElement("button");
+          button.textContent = key === 'Backspace' ? '⌫' : key;
+          button.id = `key-${key}`;
+          button.onclick = () => handleKey(key);
+          button.classList.add("keyboard-button");
+          rowDiv.appendChild(button);
+        }
+        keyboard.appendChild(rowDiv);
+      });
     }
-
-    keyboard.appendChild(rowDiv);
-  });
-}
 
     function handleKey(key) {
       if (key === "Backspace") {
@@ -146,6 +206,10 @@
         submitGuess();
       } else if (key.length === 1 && currentGuess.length < wordLength) {
         currentGuess += key.toLowerCase();
+        // If this is the first guess and firstGuessWord is not set, set it
+        if (currentRow === 0 && firstGuessWord === null && currentGuess.length === wordLength) {
+            firstGuessWord = currentGuess;
+        }
       }
       updateBoard();
     }
@@ -180,6 +244,12 @@
         showAlert("Not a baby name");
         return;
       }
+
+      // If this is the first valid guess, set firstGuessWord
+      if (currentRow === 0 && firstGuessWord === null) {
+          firstGuessWord = currentGuess;
+      }
+
       const tiles = document.querySelectorAll(".tile");
       for (let i = 0; i < wordLength; i++) {
         const index = currentRow * wordLength + i;
@@ -199,27 +269,17 @@
           }
         }, i * 300);
       }
+
       setTimeout(() => {
         if (currentGuess === targetWord) {
-        const timeSpent = Math.floor((Date.now() - startTime) / 1000);
-      
-        document.getElementById("win-message-container").innerHTML = WIN_MESSAGE;
-        document.getElementById("win-screen").classList.remove("hidden");
-      
-        setTimeout(() => {
-          const name = prompt("Nice work! Enter your name to see the scoreboard:");
-          if (name) {
-            saveResult(name, totalWrongGuesses + 1, timeSpent, firstGuessWord); // +1 for the winning guess
-          }
-        }, 500);
-      
-        return;
-      }
+          handleWin(); // Call handleWin function
+          return;
+        }
 
         totalWrongGuesses++;
         currentRow++;
         if (currentRow >= maxGuesses) {
-          document.getElementById("lose-screen").classList.remove("hidden");
+          loseScreen.classList.remove("hidden"); // Use the reference
           return;
         }
         currentGuess = "";
@@ -242,14 +302,57 @@
     }
 
     function startGame() {
-      const intro = document.getElementById("intro-screen");
-      if (intro) intro.style.display = "none";
+      introScreen.classList.add("hidden"); // Hide the intro screen
     }
 
     function restartGame() {
       window.location.reload();
     }
 
+    // --- Modal Control Functions (Now defined in this main script block) ---
+    // Make sure these are defined BEFORE they are called by handleWin or other functions
+    function handleWin() {
+        console.log("handleWin triggered");
+        const timeSpent = Math.floor((Date.now() - startTime) / 1000);
+
+        // Display win screen first
+        document.getElementById("win-message-container").innerHTML = WIN_MESSAGE; // WIN_MESSAGE should come from win-message.js
+        winScreen.classList.remove("hidden"); // Show win screen
+
+        // Then, after a short delay, open the name modal
+        setTimeout(() => {
+            openNameModal();
+        }, 1000); // Increased delay for better user experience
+    }
+
+    function openNameModal() {
+        console.log("openNameModal called!"); // For debugging
+        nameModal.classList.remove("hidden");
+    }
+
+    function closeNameModal() {
+        console.log("closeNameModal called!"); // For debugging
+        nameModal.classList.add("hidden");
+        document.getElementById("player-name").value = ''; // Clear input
+    }
+
+    async function submitScore() {
+        const name = document.getElementById("player-name").value.trim();
+        if (!name) {
+            alert("Please enter a name."); // Using alert for now, can be replaced with custom alert
+            return;
+        }
+
+        const guesses = totalWrongGuesses + 1; // Corrected to be accurate guess count
+        const time = Math.floor((Date.now() - startTime) / 1000);
+
+        // Call saveResult which is defined in the module script, but exposed globally
+        await window.saveResult(name, guesses, time, firstGuessWord);
+        closeNameModal();
+        window.showScoreboard(); // Call showScoreboard which is exposed globally
+    }
+
+    // Initial setup when the page loads
     fetch("words.json")
       .then(res => res.json())
       .then(data => {
@@ -257,61 +360,69 @@
         createBoard();
         createKeyboard();
         document.addEventListener("keydown", e => handleKey(e.key));
-      });
+        // Ensure intro screen is visible and other modals are hidden on initial load
+        introScreen.classList.remove("hidden"); // Make sure intro is visible
+        winScreen.classList.add("hidden");
+        loseScreen.classList.add("hidden");
+        nameModal.classList.add("hidden"); // Explicitly ensure name modal is hidden
+      })
+      .catch(error => console.error("Error loading words.json:", error)); // Add error handling for fetch
   </script>
+
   <script type="module">
-  // Import the functions you need from the SDKs
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getFirestore, collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, query, orderBy } from "https://www.www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-  // 2. Your Firebase configuration (replace these with your actual values)
-const firebaseConfig = {
-  apiKey: "AIzaSyA4ns_9OCK-90S6XZ7mlf20L8aKyqaj1Do",
-  authDomain: "babystratton-e545f.firebaseapp.com",
-  projectId: "babystratton-e545f",
-  storageBucket: "babystratton-e545f.firebasestorage.app",
-  messagingSenderId: "747587536634",
-  appId: "1:747587536634:web:2d19e1e25afd482ca6ab43",
-  measurementId: "G-KBZ295JCMV"
-};
+    // 2. Your Firebase configuration (replace these with your actual values)
+    const firebaseConfig = {
+      apiKey: "AIzaSyA4ns_9OCK-90S6XZ7mlf20L8aKyqaj1Do",
+      authDomain: "babystratton-e545f.firebaseapp.com",
+      projectId: "babystratton-e545f",
+      storageBucket: "babystratton-e545f.firebasestorage.app",
+      messagingSenderId: "747587536634",
+      appId: "1:747587536634:web:2d19e1e25afd482ca6ab43",
+      measurementId: "G-KBZ295JCMV"
+    };
 
-  // 3. Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+    // 3. Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-  // 4. Save player result to Firestore
-  async function saveResult(name, guesses, time, firstGuess) {
-    try {
-      await addDoc(collection(db, "scoreboard"), {
-        name,
-        guesses,
-        time,
-        firstGuess,
-        timestamp: Date.now()
-      });
-    } catch (e) {
-      console.error("Error adding document: ", e);
+    // 4. Save player result to Firestore
+    async function saveResult(name, guesses, time, firstGuess) {
+      try {
+        await addDoc(collection(db, "scoreboard"), {
+          name,
+          guesses,
+          time,
+          firstGuess,
+          timestamp: Date.now()
+        });
+        console.log("Score saved successfully!");
+      } catch (e) {
+        console.error("Error adding document: ", e);
+      }
     }
-  }
 
-  // 5. Fetch and display scoreboard
-  async function showScoreboard() {
-    const q = query(collection(db, "scoreboard"), orderBy("guesses"), orderBy("time"));
-    const querySnapshot = await getDocs(q);
+    // 5. Fetch and display scoreboard
+    async function showScoreboard() {
+      const q = query(collection(db, "scoreboard"), orderBy("guesses"), orderBy("time"));
+      const querySnapshot = await getDocs(q);
 
-    const scoreboard = document.getElementById("scoreboard");
-    scoreboard.innerHTML = "<h3>Scoreboard</h3><table><tr><th>Name</th><th>Guesses</th><th>Time (s)</th><th>First Guess</th></tr>";
-    querySnapshot.forEach(doc => {
-      const data = doc.data();
-      scoreboard.innerHTML += `<tr><td>${data.name}</td><td>${data.guesses}</td><td>${data.time}</td><td>${data.firstGuess}</td></tr>`;
-    });
-    scoreboard.innerHTML += "</table>";
-    scoreboard.classList.remove("hidden");
-  }
+      const scoreboard = document.getElementById("scoreboard");
+      let scoreboardHtml = "<h3>Scoreboard</h3><table><thead><tr><th>Name</th><th>Guesses</th><th>Time (s)</th><th>First Guess</th></tr></thead><tbody>";
+      querySnapshot.forEach(doc => {
+        const data = doc.data();
+        scoreboardHtml += `<tr><td>${data.name}</td><td>${data.guesses}</td><td>${data.time}</td><td>${data.firstGuess || 'N/A'}</td></tr>`;
+      });
+      scoreboardHtml += "</tbody></table>";
+      scoreboard.innerHTML = scoreboardHtml;
+      scoreboard.classList.remove("hidden");
+    }
 
-  // Expose these globally
-  window.saveResult = saveResult;
-  window.showScoreboard = showScoreboard;
-</script>
+    // Expose these functions to the global window object so the main script can call them
+    window.saveResult = saveResult;
+    window.showScoreboard = showScoreboard;
+  </script>
 </body>
 </html>
