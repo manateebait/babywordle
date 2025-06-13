@@ -69,13 +69,12 @@
         width: 300px;
         position: relative;
         z-index: 11;
-        /* --- NEW: Make name modal content scrollable for mobile keyboard --- */
-        max-height: 80vh; /* Adjust as needed, e.g., 80% of viewport height */
+        max-height: 80vh; 
         overflow-y: auto;
-        overflow-x: hidden; /* Prevent horizontal scroll */
-        display: flex; /* Use flex for internal layout */
+        overflow-x: hidden; /* Prevent horizontal scroll for Name Modal */
+        display: flex;
         flex-direction: column;
-        justify-content: space-between; /* Push buttons to bottom if content is short */
+        justify-content: space-between;
     }
     #name-modal input[type="text"] {
         padding: 10px;
@@ -87,10 +86,10 @@
         color: #fff;
         font-size: 1em;
     }
-    #name-modal .modal-buttons { /* NEW: Wrapper for buttons */
-        margin-top: auto; /* Pushes buttons to bottom if flex column */
-        padding-top: 15px; /* Space between input and buttons */
-        text-align: center; /* Center the buttons */
+    #name-modal .modal-buttons {
+        margin-top: auto;
+        padding-top: 15px;
+        text-align: center;
     }
     #name-modal button {
         margin: 5px;
@@ -98,7 +97,7 @@
     }
     
     /* Scoreboard Specific Styles */
-    #final-scoreboard-modal .modal-content { /* Targeting the content inside scoreboard modal */
+    #final-scoreboard-modal .modal-content {
         background: #1e1e1e;
         padding: 15px;
         border-radius: 8px;
@@ -106,20 +105,32 @@
         max-width: 90%;
         width: 500px;
         color: #eee;
-        /* --- NEW: Fixed height and scroll for scoreboard table --- */
-        max-height: 80vh; /* Adjust as needed */
-        overflow-y: auto;
-        overflow-x: hidden; /* Prevent horizontal scroll */
-        display: flex; /* Use flex for internal layout */
+        display: flex;
         flex-direction: column;
+        /* --- NEW: Removed max-height/overflow from here, applied to inner container --- */
+    }
+    /* NEW: Container for the scrollable table */
+    #scoreboard-table-container {
+        max-height: 50vh; /* Adjust height for the scrollable area */
+        overflow-y: auto; /* Enable vertical scroll */
+        overflow-x: hidden; /* Prevent horizontal scroll */
+        margin-bottom: 10px; /* Space between table and button */
+        flex-grow: 1; /* Allow container to grow if needed */
     }
     #scoreboard table {
         width: 100%;
         border-collapse: collapse;
         margin-top: 10px;
         font-size: 0.9em;
-        flex-shrink: 0; /* Prevents table from shrinking in flex container */
+        /* flex-shrink: 0; This might fight with table-layout */
+        table-layout: fixed; /* Fixed table layout for better column control */
     }
+    /* Column widths for better spacing */
+    #scoreboard th:nth-child(1), #scoreboard td:nth-child(1) { width: 30%; } /* Name */
+    #scoreboard th:nth-child(2), #scoreboard td:nth-child(2) { width: 15%; } /* Guesses */
+    #scoreboard th:nth-child(3), #scoreboard td:nth-child(3) { width: 20%; } /* Time */
+    #scoreboard th:nth-child(4), #scoreboard td:nth-child(4) { width: 35%; } /* First Guess */
+
     #scoreboard th,
     #scoreboard td {
         padding: 8px 12px;
@@ -129,14 +140,15 @@
     #scoreboard th {
         background-color: #333;
     }
-    #final-scoreboard-modal .modal-content h3 { /* Style for scoreboard title */
+    #final-scoreboard-modal .modal-content h3 {
         margin-top: 0;
         margin-bottom: 10px;
     }
-    #final-scoreboard-modal .modal-buttons { /* NEW: Wrapper for button below scoreboard */
-        margin-top: auto; /* Pushes button to bottom if flex column */
-        padding-top: 15px; /* Space between scoreboard and button */
+    #final-scoreboard-modal .modal-buttons {
+        margin-top: auto;
+        padding-top: 15px;
         text-align: center;
+        flex-shrink: 0; /* Prevent buttons from shrinking */
     }
 
 
@@ -248,9 +260,7 @@
     const playerNameInput = document.getElementById("player-name");
     const startGameButton = document.getElementById("startGameButton");
     const finalScoreboardModal = document.getElementById("final-scoreboard-modal");
-    // NEW: The div that will contain the scrollable scoreboard table
-    const scoreboardTableContainer = document.getElementById("scoreboard-table-container");
-    // References to the name modal buttons
+    const scoreboardTableContainer = document.getElementById("scoreboard-table-container"); 
     const submitNameButton = document.getElementById("submitNameButton");
     const cancelNameButton = document.getElementById("cancelNameButton");
 
@@ -419,8 +429,10 @@
     function closeNameModal() {
         console.log("closeNameModal called!");
         nameModal.classList.add("hidden");
-        playerNameInput.value = '';
-        // DO NOT automatically show scoreboard here. The win-screen should remain.
+        playerNameInput.value = ''; // Clear input field
+        // Optionally disable buttons here to prevent immediate re-clicks after closing
+        if (submitNameButton) submitNameButton.disabled = true;
+        if (cancelNameButton) cancelNameButton.disabled = true;
     }
 
     async function saveResult(name, guesses, time, firstGuess) {
@@ -439,11 +451,19 @@
       }
     }
 
+    // Helper function to format time in MM:SS
+    function formatTime(seconds) {
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        const formattedMinutes = String(minutes).padStart(1, '0'); // No leading zero if single digit for minutes
+        const formattedSeconds = String(remainingSeconds).padStart(2, '0'); // Always two digits for seconds
+        return `${formattedMinutes}:${formattedSeconds}`;
+    }
+
     // showScoreboard function to be called by button
     async function showScoreboard() {
-      console.log("showScoreboard called!"); // Check if this log appears
+      console.log("showScoreboard called!");
       try {
-          // Verify that scoreboardTableContainer and finalScoreboardModal are found
           if (!scoreboardTableContainer || !finalScoreboardModal) {
               console.error("Error: Scoreboard elements not found in DOM.");
               showAlert("Error: Scoreboard display area not found.");
@@ -458,7 +478,8 @@
           querySnapshot.forEach(doc => {
             if (rowCount < 10) { // Limit to 10 rows
                 const data = doc.data();
-                scoreboardHtml += `<tr><td>${data.name}</td><td>${data.guesses}</td><td>${data.time}</td><td>${data.firstGuess || 'N/A'}</td></tr>`;
+                // Use formatTime for the time column
+                scoreboardHtml += `<tr><td>${data.name}</td><td>${data.guesses}</td><td>${formatTime(data.time)}</td><td>${data.firstGuess || 'N/A'}</td></tr>`;
                 rowCount++;
             }
           });
@@ -477,14 +498,6 @@
           showAlert("Error loading scoreboard. Check console for details.");
       }
     }
-
-    // NEW: Function to go back from scoreboard to win screen
-    function backToWinScreen() {
-        console.log("Back to Win Screen button clicked.");
-        finalScoreboardModal.classList.add("hidden"); // Hide scoreboard
-        winScreen.classList.remove("hidden"); // Show win screen
-    }
-
 
     async function submitScore() {
         console.log("Submit button clicked!");
@@ -510,19 +523,20 @@
             // Re-enable buttons if submission fails so user can try again
             if (submitNameButton) submitNameButton.disabled = false;
             if (cancelNameButton) cancelNameButton.disabled = false;
-            return; // Stop here if save fails
-        } finally {
-            // This finally block ensures closeNameModal runs even if saveResult throws an error
-            // However, since we re-enable on catch, this might be redundant if the error path handles it.
-            // Keeping it for robust closing regardless of success/fail,
-            // but the re-enabling might need adjustment based on desired UX on failure.
+            return;
         }
         closeNameModal(); // Close the name modal after successful submission
     }
 
+    function backToWinScreen() {
+        console.log("Back to Win Screen button clicked.");
+        finalScoreboardModal.classList.add("hidden"); // Hide scoreboard
+        winScreen.classList.remove("hidden"); // Show win screen
+    }
+
+
     document.addEventListener("DOMContentLoaded", () => {
         console.log("DOMContentLoaded fired.");
-        // Log references to major elements to ensure they are found
         console.log("introScreen:", introScreen);
         console.log("winScreen:", winScreen);
         console.log("loseScreen:", loseScreen);
@@ -569,7 +583,7 @@
         closeNameModal: closeNameModal,
         showScoreboard: showScoreboard,
         handleKey: handleKey,
-        backToWinScreen: backToWinScreen // NEW: Expose the new function
+        backToWinScreen: backToWinScreen
     };
   </script>
 </body>
