@@ -93,7 +93,7 @@
   <div id="name-modal" class="modal hidden">
   <div style="background:#1e1e1f; padding: 20px; border-radius: 8px; text-align: center;">
     <h3>Enter your name</h3>
-    <input type="text" id="player-name" placeholder="Your name1" style="padding: 8px; width: 80%; margin: 10px 0;">
+    <input type="text" id="player-name" placeholder="Your name" style="padding: 8px; width: 80%; margin: 10px 0;">
     <br>
     <button onclick="submitScore()">Submit</button>
     <button onclick="closeNameModal()">Cancel</button>
@@ -211,11 +211,18 @@
         }, i * 300);
       }
       setTimeout(() => {
-        if (currentGuess === targetWord) {
+      if (currentGuess === targetWord) {
         const timeSpent = Math.floor((Date.now() - startTime) / 1000);
-        handleWin(timeSpent);
+      
+        document.getElementById("win-message-container").innerHTML = WIN_MESSAGE;
+        document.getElementById("win-screen").classList.remove("hidden");
+      
+        setTimeout(() => {
+          openNameModal();
+        }, 300);
+      
         return;
-        }
+      }
 
         totalWrongGuesses++;
         currentRow++;
