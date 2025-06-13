@@ -109,7 +109,7 @@
       &nbsp;WORDLE
     </h2>
     <p>Guess the 6-letter name in 6 tries.</p>
-    <button onclick="startGame()">Start Game</button>
+    <button id="startGameButton">Start Game</button>
   </div>
 
   <div id="alert">Not a baby name</div>
@@ -190,6 +190,7 @@
     const winMessageContainer = document.getElementById("win-message-container");
     const scoreboardDiv = document.getElementById("scoreboard");
     const playerNameInput = document.getElementById("player-name");
+    const startGameButton = document.getElementById("startGameButton"); // Get reference to the Start Game button
 
 
     // --- Core Game Functions ---
@@ -246,7 +247,7 @@
     function showAlert(message) {
       alertBox.textContent = message;
       alertBox.style.display = "block";
-      setTimeout(() => { alert relentlessly.display = "none"; }, 1500);
+      setTimeout(() => { alertBox.style.display = "none"; }, 1500);
     }
 
     function shakeRow() {
@@ -332,8 +333,8 @@
       firstGuessWord = null;
       currentRow = 0;
       currentGuess = "";
-      // Potentially clear board and reset keys if not done by reload
-      // For simplicity, restartGame does a reload now
+      // The board and keyboard are created on DOMContentLoaded,
+      // so no need to recreate here unless you need a "reset board" functionality.
     }
 
     // This function will be exposed globally
@@ -418,8 +419,11 @@
 
 
     // --- Initialization Logic ---
-    // This runs AFTER the HTML is parsed and the module script is ready.
     document.addEventListener("DOMContentLoaded", () => {
+        // Find the start game button and attach the event listener
+        // This runs AFTER the HTML is parsed, so the button element exists
+        startGameButton.addEventListener("click", startGame);
+
         fetch("words.json")
             .then(res => {
                 if (!res.ok) {
@@ -442,7 +446,6 @@
             .catch(error => console.error("Error loading words.json:", error));
     });
 
-
     // Expose necessary functions to the global window object.
     // We'll create a single `gameLogic` object to hold them cleanly.
     window.gameLogic = {
@@ -452,18 +455,8 @@
         openNameModal: openNameModal, // Though only called internally now
         closeNameModal: closeNameModal,
         showScoreboard: showScoreboard,
-        // You might consider exposing handleKey if you plan to use it outside
-        // of keyboard events (e.g., custom on-screen keyboard), but generally
-        // keep internal functions internal.
-        handleKey: handleKey // Exposing handleKey for the virtual keyboard onclicks
+        handleKey: handleKey // Still exposing this for virtual keyboard if it's rendered with onclick attributes
     };
-
-    // Make sure the virtual keyboard buttons call the exposed handleKey
-    // This is crucial for your dynamic keyboard buttons.
-    // The createKeyboard function uses `() => handleKey(key)` which directly refers to
-    // the function within this module scope, so the `window.gameLogic.handleKey` exposure
-    // is primarily for the <button onclick=""> attributes or if you had external script calling it.
-    // For the HTML onclick attributes, we need to explicitly use window.gameLogic.functionName.
 
   </script>
 </body>
