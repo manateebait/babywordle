@@ -1,4 +1,4 @@
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -185,6 +185,7 @@
     }
 
     function submitGuess() {
+      console.log("submitGuess called with:", currentGuess);
       if (currentGuess.length !== wordLength) return;
       if (!allowedWords.includes(currentGuess)) {
         shakeRow();
@@ -214,7 +215,7 @@
       if (currentGuess === targetWord) {
         const timeSpent = Math.floor((Date.now() - startTime) / 1000);
       
-        document.getElementById("win-message-container").innerHTML = "you got it!";
+        document.getElementById("win-message-container").innerHTML = WIN_MESSAGE;
         document.getElementById("win-screen").classList.remove("hidden");
       
         setTimeout(() => {
