@@ -89,6 +89,17 @@
     <h2>Better luck next time!</h2>
     <button onclick="restartGame()">Try Again</button>
   </div>
+  
+  <div id="name-modal" class="modal hidden">
+  <div style="background:#1e1e1f; padding: 20px; border-radius: 8px; text-align: center;">
+    <h3>Enter your name</h3>
+    <input type="text" id="player-name" placeholder="Your name" style="padding: 8px; width: 80%; margin: 10px 0;">
+    <br>
+    <button onclick="submitScore()">Submit</button>
+    <button onclick="closeNameModal()">Cancel</button>
+  </div>
+</div>
+
   <script src="js/win-message.js"></script>
   <script>
     let startTime = Date.now();
@@ -312,6 +323,24 @@ const firebaseConfig = {
   // Expose these globally
   window.saveResult = saveResult;
   window.showScoreboard = showScoreboard;
+
+   function openNameModal() {
+  document.getElementById("name-modal").classList.remove("hidden");
+}
+
+function closeNameModal() {
+  document.getElementById("name-modal").classList.add("hidden");
+}
+
+async function submitScore() {
+  const name = document.getElementById("player-name").value.trim();
+  if (!name) return alert("Please enter a name.");
+
+  await saveResult(name, totalGuesses, timeOnSiteSeconds, firstGuess);
+  closeNameModal();
+  showScoreboard();
+}
+ 
 </script>
 </body>
 </html>
