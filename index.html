@@ -69,11 +69,7 @@
         width: 300px;
         position: relative;
         z-index: 11;
-        /* Reverted these for mobile keyboard compatibility */
-        /* max-height: 80vh; */ 
-        /* overflow-y: auto; */
-        overflow-x: hidden; /* Keep horizontal scroll hidden */
-        /* Removed flex-direction/justify-content to let browser handle scroll more naturally */
+        overflow-x: hidden; /* Prevent horizontal scroll for Name Modal */
     }
     #name-modal input[type="text"] {
         padding: 10px;
@@ -86,7 +82,7 @@
         font-size: 1em;
     }
     #name-modal .modal-buttons {
-        margin-top: 15px; /* Keep a standard margin */
+        margin-top: 15px;
         text-align: center;
     }
     #name-modal button {
@@ -97,13 +93,13 @@
     /* Scoreboard Specific Styles */
     #final-scoreboard-modal .modal-content {
         background: #1e1e1e;
-        padding: 15px;
+        padding: 10px; /* Reduced padding to give more internal space */
         border-radius: 8px;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-        max-width: 80%; /* Scoreboard content fills 80% of the modal */
-        width: 500px; /* Max width for desktop */
+        max-width: calc(100vw - 20px); /* Maximize width, leaving 10px on each side of screen */
+        width: 700px; /* Max width for desktop */
         color: #eee;
-        display: flex; /* Flex for main modal content */
+        display: flex;
         flex-direction: column;
     }
     /* Dedicated container for the scrollable table */
@@ -113,25 +109,27 @@
         overflow-x: hidden; /* Prevent horizontal scroll */
         margin-bottom: 10px; /* Space between table and button */
         flex-grow: 1; /* Allow container to grow if needed */
+        padding-right: 5px; /* Space for scrollbar on right, if present */
     }
     #scoreboard table {
-        width: 100%;
+        width: 100%; /* Make table fill its container */
         border-collapse: collapse;
         margin-top: 10px;
         font-size: 0.9em;
         table-layout: fixed; /* Fixed table layout for better column control */
     }
     /* Column widths for better spacing */
-    #scoreboard th:nth-child(1), #scoreboard td:nth-child(1) { width: 30%; } /* Name */
+    #scoreboard th:nth-child(1), #scoreboard td:nth-child(1) { width: 35%; } /* Name */
     #scoreboard th:nth-child(2), #scoreboard td:nth-child(2) { width: 15%; } /* Guesses */
     #scoreboard th:nth-child(3), #scoreboard td:nth-child(3) { width: 20%; } /* Time */
-    #scoreboard th:nth-child(4), #scoreboard td:nth-child(4) { width: 35%; } /* First Guess */
+    #scoreboard th:nth-child(4), #scoreboard td:nth-child(4) { width: 30%; } /* First Guess */
 
     #scoreboard th,
     #scoreboard td {
-        padding: 8px 12px;
+        padding: 10px 5px; /* Slightly more vertical padding, reduced horizontal padding */
         border: 1px solid #444;
         text-align: center;
+        word-break: break-word; /* Allow long words to break */
     }
     #scoreboard th {
         background-color: #333;
@@ -423,7 +421,8 @@
         // NEW: Scroll the window/body to ensure the input and buttons are visible
         // This is a common mobile solution for keyboard overlays.
         setTimeout(() => {
-            playerNameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Use 'nearest' to ensure it's just barely visible if that's better, or 'center' for more space
+            playerNameInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); 
         }, 100); // Small delay to allow keyboard to appear
     }
 
