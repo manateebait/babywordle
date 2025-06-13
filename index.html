@@ -387,6 +387,7 @@
         winScreen.classList.remove("hidden"); // Show win screen
 
         // Now, immediately open the name modal. No delay needed here.
+        // The name modal's background will naturally obscure the win screen.
         openNameModal();
     }
 
@@ -394,9 +395,8 @@
         console.log("openNameModal called!");
         nameModal.classList.remove("hidden");
         playerNameInput.focus(); // Give focus to the input field
-        // Hide win screen immediately when name modal appears if it's still there
-        winScreen.classList.add("hidden");
-        finalScoreboardModal.classList.add("hidden"); // Ensure scoreboard is hidden too
+        // Removed: winScreen.classList.add("hidden"); -- Keep winScreen visible behind
+        finalScoreboardModal.classList.add("hidden"); // Ensure scoreboard is hidden
     }
 
     function closeNameModal() {
@@ -437,7 +437,7 @@
       scoreboardContentDiv.innerHTML = scoreboardHtml; // Put content into the specific div
 
       // Hide other modals first
-      winScreen.classList.add("hidden");
+      winScreen.classList.add("hidden"); // Now hide the win screen only when scoreboard is shown
       loseScreen.classList.add("hidden");
       nameModal.classList.add("hidden");
 
