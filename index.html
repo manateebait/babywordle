@@ -58,7 +58,7 @@
     .hidden { display: none !important; }
     #alert { position: absolute; top: 10%; left: 50%; transform: translateX(-50%); background: #333; padding: 12px 24px; border-radius: 4px; font-size: 1.2em; display: none; z-index: 20; }
     
-    /* Name Modal Specific Styles */
+    /* Name Modal Specific Styles (Reverted to a more stable state) */
     #name-modal .modal-content {
         background:#1e1e1f;
         padding: 20px;
@@ -69,12 +69,13 @@
         width: 300px;
         position: relative;
         z-index: 11;
-        max-height: 80vh; 
-        overflow-y: auto;
-        overflow-x: hidden; /* Prevent horizontal scroll for Name Modal */
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
+        /* Reverting these as they caused issues on PC. Mobile often handles this better inherently. */
+        /* max-height: 80vh;  */
+        /* overflow-y: auto; */
+        /* overflow-x: hidden; */
+        /* display: flex; */
+        /* flex-direction: column; */
+        /* justify-content: space-between; */
     }
     #name-modal input[type="text"] {
         padding: 10px;
@@ -87,8 +88,7 @@
         font-size: 1em;
     }
     #name-modal .modal-buttons {
-        margin-top: auto;
-        padding-top: 15px;
+        margin-top: 15px; /* Keep a standard margin */
         text-align: center;
     }
     #name-modal button {
@@ -102,27 +102,26 @@
         padding: 15px;
         border-radius: 8px;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-        max-width: 90%;
-        width: 500px;
+        max-width: 80%; /* Scoreboard content fills 80% of the modal */
+        width: 500px; /* Max width for desktop */
         color: #eee;
         display: flex;
         flex-direction: column;
-        /* --- NEW: Removed max-height/overflow from here, applied to inner container --- */
+        /* Removed max-height/overflow from here */
     }
-    /* NEW: Container for the scrollable table */
+    /* Dedicated container for the scrollable table */
     #scoreboard-table-container {
-        max-height: 50vh; /* Adjust height for the scrollable area */
+        max-height: 250px; /* Fixed height for scrolling (adjust as needed) */
         overflow-y: auto; /* Enable vertical scroll */
         overflow-x: hidden; /* Prevent horizontal scroll */
         margin-bottom: 10px; /* Space between table and button */
-        flex-grow: 1; /* Allow container to grow if needed */
+        flex-grow: 1; /* Allows it to take available height */
     }
     #scoreboard table {
         width: 100%;
         border-collapse: collapse;
         margin-top: 10px;
         font-size: 0.9em;
-        /* flex-shrink: 0; This might fight with table-layout */
         table-layout: fixed; /* Fixed table layout for better column control */
     }
     /* Column widths for better spacing */
@@ -148,7 +147,7 @@
         margin-top: auto;
         padding-top: 15px;
         text-align: center;
-        flex-shrink: 0; /* Prevent buttons from shrinking */
+        flex-shrink: 0;
     }
 
 
@@ -451,7 +450,7 @@
       }
     }
 
-    // Helper function to format time in MM:SS
+    // Helper function to format time in M:SS
     function formatTime(seconds) {
         const minutes = Math.floor(seconds / 60);
         const remainingSeconds = seconds % 60;
@@ -528,6 +527,7 @@
         closeNameModal(); // Close the name modal after successful submission
     }
 
+    // Function to go back from scoreboard to win screen
     function backToWinScreen() {
         console.log("Back to Win Screen button clicked.");
         finalScoreboardModal.classList.add("hidden"); // Hide scoreboard
