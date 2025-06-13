@@ -186,7 +186,6 @@
 
     function handleWin(timeSpent) {
       console.log("handleWin triggered, time:", timeSpent);
-    
       document.getElementById("win-message-container").innerHTML = WIN_MESSAGE;
       document.getElementById("win-screen").classList.remove("hidden");
     
@@ -329,7 +328,8 @@ const firebaseConfig = {
   window.showScoreboard = showScoreboard;
 
    function openNameModal() {
-  document.getElementById("name-modal").classList.remove("hidden");
+  console.log("openNameModal triggered");
+  // document.getElementById("name-modal").classList.remove("hidden");
 }
 
 function closeNameModal() {
