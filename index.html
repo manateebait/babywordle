@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+  <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -213,19 +213,9 @@
       setTimeout(() => {
         if (currentGuess === targetWord) {
         const timeSpent = Math.floor((Date.now() - startTime) / 1000);
-      
-        document.getElementById("win-message-container").innerHTML = WIN_MESSAGE;
-        document.getElementById("win-screen").classList.remove("hidden");
-      
-        setTimeout(() => {
-          const name = prompt("Nice work! Enter your name to see the scoreboard:");
-          if (name) {
-            saveResult(name, totalWrongGuesses + 1, timeSpent, firstGuessWord); // +1 for the winning guess
-          }
-        }, 500);
-      
+        handleWin(timeSpent);
         return;
-      }
+        }
 
         totalWrongGuesses++;
         currentRow++;
@@ -336,7 +326,10 @@ async function submitScore() {
   const name = document.getElementById("player-name").value.trim();
   if (!name) return alert("Please enter a name.");
 
-  await saveResult(name, totalGuesses, timeOnSiteSeconds, firstGuess);
+  const guesses = totalWrongGuesses + 1;
+  const time = Math.floor((Date.now() - startTime) / 1000);
+
+  await saveResult(name, guesses, time, firstGuessWord);
   closeNameModal();
   showScoreboard();
 }
