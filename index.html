@@ -89,17 +89,6 @@
     <h2>Better luck next time!</h2>
     <button onclick="restartGame()">Try Again</button>
   </div>
-  
-  <div id="name-modal" class="modal hidden">
-  <div style="background:#1e1e1f; padding: 20px; border-radius: 8px; text-align: center;">
-    <h3>Enter your1 name</h3>
-    <input type="text" id="player-name" placeholder="Your name" style="padding: 8px; width: 80%; margin: 10px 0;">
-    <br>
-    <button onclick="submitScore()">Submit</button>
-    <button onclick="closeNameModal()">Cancel</button>
-  </div>
-</div>
-
   <script src="js/win-message.js"></script>
   <script>
     let startTime = Date.now();
@@ -184,16 +173,6 @@
       }
     }
 
-    function handleWin(timeSpent) {
-      console.log("handleWin triggered, time:", timeSpent);
-      document.getElementById("win-message-container").innerHTML = WIN_MESSAGE;
-      document.getElementById("win-screen").classList.remove("hidden");
-    
-      setTimeout(() => {
-        openNameModal();
-      }, 300);
-    }
-    
     function submitGuess() {
       if (currentGuess.length !== wordLength) return;
       if (!allowedWords.includes(currentGuess)) {
@@ -220,15 +199,22 @@
           }
         }, i * 300);
       }
-
-      console.log("Checking guess:", currentGuess, "vs", targetWord);
-      
       setTimeout(() => {
         if (currentGuess === targetWord) {
-          const timeSpent = Math.floor((Date.now() - startTime) / 1000);
-          handleWin(timeSpent);
-          return;
-        }
+        const timeSpent = Math.floor((Date.now() - startTime) / 1000);
+      
+        document.getElementById("win-message-container").innerHTML = WIN_MESSAGE;
+        document.getElementById("win-screen").classList.remove("hidden");
+      
+        setTimeout(() => {
+          const name = prompt("Nice work! Enter your name to see the scoreboard:");
+          if (name) {
+            saveResult(name, totalWrongGuesses + 1, timeSpent, firstGuessWord); // +1 for the winning guess
+          }
+        }, 500);
+      
+        return;
+      }
 
         totalWrongGuesses++;
         currentRow++;
@@ -326,28 +312,6 @@ const firebaseConfig = {
   // Expose these globally
   window.saveResult = saveResult;
   window.showScoreboard = showScoreboard;
-
-   function openNameModal() {
-  console.log("openNameModal triggered");
-  // document.getElementById("name-modal").classList.remove("hidden");
-}
-
-function closeNameModal() {
-  document.getElementById("name-modal").classList.add("hidden");
-}
-
-async function submitScore() {
-  const name = document.getElementById("player-name").value.trim();
-  if (!name) return alert("Please enter a name.");
-
-  const guesses = totalWrongGuesses + 1;
-  const time = Math.floor((Date.now() - startTime) / 1000);
-
-  await saveResult(name, guesses, time, firstGuessWord);
-  closeNameModal();
-  showScoreboard();
-}
- 
 </script>
 </body>
 </html>
