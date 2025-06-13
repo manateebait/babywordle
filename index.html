@@ -87,6 +87,35 @@
         padding: 10px 20px;
     }
 
+    /* Scoreboard Specific Styles (moved/clarified from your previous CSS) */
+    #scoreboard {
+        background: #1e1e1e;
+        padding: 15px;
+        border-radius: 8px;
+        margin-top: 20px;
+        max-width: 90%; /* Adjust as needed */
+        width: 500px; /* Adjust as needed */
+        color: #eee;
+    }
+
+    #scoreboard table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+        font-size: 0.9em;
+    }
+
+    #scoreboard th,
+    #scoreboard td {
+        padding: 8px 12px;
+        border: 1px solid #444;
+        text-align: center;
+    }
+
+    #scoreboard th {
+        background-color: #333;
+    }
+
 
     @media (max-width: 600px) {
       .tile { width: 50px; height: 50px; }
@@ -126,8 +155,7 @@
 
   <div id="win-screen" class="modal hidden">
     <div id="win-message-container"></div>
-    <button onclick="window.gameLogic.showScoreboard()">See Scoreboard</button>
-    <div id="scoreboard" class="hidden"></div>
+    <button onclick="window.gameLogic.restartGame()">Play Again</button>
   </div>
 
   <div id="lose-screen" class="modal hidden">
@@ -137,13 +165,19 @@
 
   <div id="name-modal" class="modal hidden">
     <div class="modal-content">
-      <h3>Enter your name</h3>
+      <h3>Enter your name to see the Scoreboard!</h3>
       <input type="text" id="player-name" placeholder="Your name">
       <br>
       <button onclick="window.gameLogic.submitScore()">Submit</button>
-      <button onclick="window.gameLogic.closeNameModal()">Cancel</button>
-    </div>
+      <button onclick="window.gameLogic.closeNameModal()">No Thanks</button> </div>
   </div>
+
+  <div id="final-scoreboard-modal" class="modal hidden">
+      <div class="modal-content" id="scoreboard">
+          </div>
+      <button onclick="window.gameLogic.restartGame()">Play Again</button>
+  </div>
+
 
   <script src="js/win-message.js"></script>
 
@@ -188,9 +222,10 @@
     const loseScreen = document.getElementById("lose-screen");
     const nameModal = document.getElementById("name-modal");
     const winMessageContainer = document.getElementById("win-message-container");
-    const scoreboardDiv = document.getElementById("scoreboard");
     const playerNameInput = document.getElementById("player-name");
-    const startGameButton = document.getElementById("startGameButton"); // Get reference to the Start Game button
+    const startGameButton = document.getElementById("startGameButton");
+    const finalScoreboardModal = document.getElementById("final-scoreboard-modal"); // New scoreboard modal
+    const scoreboardContentDiv = document.getElementById("scoreboard"); // The inner div that will hold scoreboard table
 
 
     // --- Core Game Functions ---
@@ -333,8 +368,7 @@
       firstGuessWord = null;
       currentRow = 0;
       currentGuess = "";
-      // The board and keyboard are created on DOMContentLoaded,
-      // so no need to recreate here unless you need a "reset board" functionality.
+      // No need to recreate board/keyboard here, they are made on DOMContentLoaded.
     }
 
     // This function will be exposed globally
@@ -350,23 +384,26 @@
         } else {
             winMessageContainer.innerHTML = "You Win!"; // Fallback
         }
-        winScreen.classList.remove("hidden");
+        winScreen.classList.remove("hidden"); // Show win screen
 
-        setTimeout(() => {
-            openNameModal();
-        }, 1000);
+        // Now, immediately open the name modal. No delay needed here.
+        openNameModal();
     }
 
     function openNameModal() {
         console.log("openNameModal called!");
         nameModal.classList.remove("hidden");
         playerNameInput.focus(); // Give focus to the input field
+        // Hide win screen immediately when name modal appears if it's still there
+        winScreen.classList.add("hidden");
+        finalScoreboardModal.classList.add("hidden"); // Ensure scoreboard is hidden too
     }
 
     function closeNameModal() {
         console.log("closeNameModal called!");
         nameModal.classList.add("hidden");
-        playerNameInput.value = ''; // Clear input
+        playerNameInput.value = ''; // Clear input field
+        showScoreboard(); // Automatically show scoreboard even if they cancel entering name
     }
 
     // Save player result to Firestore
@@ -387,6 +424,7 @@
 
     // Fetch and display scoreboard
     async function showScoreboard() {
+      console.log("showScoreboard called!");
       const q = query(collection(db, "scoreboard"), orderBy("guesses"), orderBy("time"));
       const querySnapshot = await getDocs(q);
 
@@ -396,8 +434,15 @@
         scoreboardHtml += `<tr><td>${data.name}</td><td>${data.guesses}</td><td>${data.time}</td><td>${data.firstGuess || 'N/A'}</td></tr>`;
       });
       scoreboardHtml += "</tbody></table>";
-      scoreboardDiv.innerHTML = scoreboardHtml;
-      scoreboardDiv.classList.remove("hidden");
+      scoreboardContentDiv.innerHTML = scoreboardHtml; // Put content into the specific div
+
+      // Hide other modals first
+      winScreen.classList.add("hidden");
+      loseScreen.classList.add("hidden");
+      nameModal.classList.add("hidden");
+
+      // Show the final scoreboard modal
+      finalScoreboardModal.classList.remove("hidden");
     }
 
     // Function called by the submit button in the modal
@@ -413,15 +458,13 @@
         const time = Math.floor((Date.now() - startTime) / 1000);
 
         await saveResult(name, guesses, time, firstGuessWord);
-        closeNameModal();
-        showScoreboard();
+        closeNameModal(); // This will now call showScoreboard()
     }
 
 
     // --- Initialization Logic ---
     document.addEventListener("DOMContentLoaded", () => {
         // Find the start game button and attach the event listener
-        // This runs AFTER the HTML is parsed, so the button element exists
         startGameButton.addEventListener("click", startGame);
 
         fetch("words.json")
@@ -442,6 +485,7 @@
                 winScreen.classList.add("hidden");
                 loseScreen.classList.add("hidden");
                 nameModal.classList.add("hidden");
+                finalScoreboardModal.classList.add("hidden"); // Ensure the new scoreboard modal is hidden
             })
             .catch(error => console.error("Error loading words.json:", error));
     });
@@ -452,10 +496,10 @@
         startGame: startGame,
         restartGame: restartGame,
         submitScore: submitScore,
-        openNameModal: openNameModal, // Though only called internally now
+        openNameModal: openNameModal,
         closeNameModal: closeNameModal,
         showScoreboard: showScoreboard,
-        handleKey: handleKey // Still exposing this for virtual keyboard if it's rendered with onclick attributes
+        handleKey: handleKey
     };
 
   </script>
