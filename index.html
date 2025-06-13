@@ -9,8 +9,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <style>
     body { font-family: sans-serif; text-align: center; background: #121213; color: #fff; margin: 0; padding: 0 10px; }
-    /* This style makes intro-screen and ALL .modal elements fixed and centered */
-    /* We'll use .hidden to control their visibility */
     #intro-screen, .modal {
         position: fixed;
         top: 0;
@@ -19,7 +17,7 @@
         height: 100%;
         background: rgba(18, 18, 19, 0.95);
         color: #fff;
-        display: flex; /* Changed to flex for proper centering when visible */
+        display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
@@ -57,10 +55,8 @@
       align-items: center;
     }
     .keyboard-button { flex: none; }
-    .hidden { display: none !important; } /* Added !important to ensure it overrides 'display: flex' from .modal */
+    .hidden { display: none !important; }
     #alert { position: absolute; top: 10%; left: 50%; transform: translateX(-50%); background: #333; padding: 12px 24px; border-radius: 4px; font-size: 1.2em; display: none; z-index: 20; }
-
-    /* Custom styling for the name modal content to make it look clean */
     #name-modal .modal-content {
         background:#1e1e1f;
         padding: 20px;
@@ -69,12 +65,12 @@
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
         max-width: 90%;
         width: 300px;
-        position: relative; /* Crucial for its own z-index context */
-        z-index: 11; /* Slightly higher than the modal background */
+        position: relative;
+        z-index: 11;
     }
     #name-modal input[type="text"] {
         padding: 10px;
-        width: calc(100% - 20px); /* Account for padding */
+        width: calc(100% - 20px);
         margin: 15px 0;
         border: 1px solid #555;
         border-radius: 4px;
@@ -86,37 +82,30 @@
         margin: 5px;
         padding: 10px 20px;
     }
-
-    /* Scoreboard Specific Styles (moved/clarified from your previous CSS) */
     #scoreboard {
         background: #1e1e1e;
         padding: 15px;
         border-radius: 8px;
         margin-top: 20px;
-        max-width: 90%; /* Adjust as needed */
-        width: 500px; /* Adjust as needed */
+        max-width: 90%;
+        width: 500px;
         color: #eee;
     }
-
     #scoreboard table {
         width: 100%;
         border-collapse: collapse;
         margin-top: 10px;
         font-size: 0.9em;
     }
-
     #scoreboard th,
     #scoreboard td {
         padding: 8px 12px;
         border: 1px solid #444;
         text-align: center;
     }
-
     #scoreboard th {
         background-color: #333;
     }
-
-
     @media (max-width: 600px) {
       .tile { width: 50px; height: 50px; }
       #game-board { grid-template-columns: repeat(6, 50px); gap: 6px; justify-content: center; max-width: 360px; margin: 0 auto; }
@@ -156,8 +145,7 @@
   <div id="win-screen" class="modal hidden">
     <div id="win-message-container"></div>
     <button onclick="window.gameLogic.showScoreboard()">See Scoreboard</button>
-    <button onclick="window.gameLogic.restartGame()">Play Again</button>
-  </div>
+    </div>
 
   <div id="lose-screen" class="modal hidden">
     <h2>Better luck next time!</h2>
@@ -170,7 +158,8 @@
       <input type="text" id="player-name" placeholder="Your name">
       <br>
       <button onclick="window.gameLogic.submitScore()">Submit</button>
-      <button onclick="window.gameLogic.closeNameModal()">No Thanks</button> </div>
+      <button onclick="window.gameLogic.closeNameModal()">No Thanks</button>
+    </div>
   </div>
 
   <div id="final-scoreboard-modal" class="modal hidden">
@@ -179,15 +168,11 @@
       <button onclick="window.gameLogic.restartGame()">Play Again</button>
   </div>
 
-
   <script src="js/win-message.js"></script>
-
   <script type="module">
-    // Import Firebase functions
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getFirestore, collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    // Firebase configuration (replace with your actual values)
     const firebaseConfig = {
       apiKey: "AIzaSyA4ns_9OCK-90S6XZ7mlf20L8aKyqaj1Do",
       authDomain: "babystratton-e545f.firebaseapp.com",
@@ -198,11 +183,9 @@
       measurementId: "G-KBZ295JCMV"
     };
 
-    // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // --- Game State Variables ---
     let startTime = Date.now();
     let totalWrongGuesses = 0;
     let firstGuessWord = null;
@@ -211,10 +194,9 @@
     let currentRow = 0;
     let currentGuess = "";
     let allowedWords = [];
-    const encodedTarget = [69, 77, 77, 69, 84, 84]; // EMMETT
+    const encodedTarget = [69, 77, 77, 69, 84, 84];
     const targetWord = String.fromCharCode(...encodedTarget).toLowerCase();
 
-    // --- DOM Element References ---
     const board = document.getElementById("game-board");
     const keyboard = document.getElementById("keyboard");
     const alertBox = document.getElementById("alert");
@@ -225,11 +207,9 @@
     const winMessageContainer = document.getElementById("win-message-container");
     const playerNameInput = document.getElementById("player-name");
     const startGameButton = document.getElementById("startGameButton");
-    const finalScoreboardModal = document.getElementById("final-scoreboard-modal"); // New scoreboard modal
-    const scoreboardContentDiv = document.getElementById("scoreboard"); // The inner div that will hold scoreboard table
+    const finalScoreboardModal = document.getElementById("final-scoreboard-modal");
+    const scoreboardContentDiv = document.getElementById("scoreboard");
 
-
-    // --- Core Game Functions ---
     function createBoard() {
       for (let i = 0; i < maxGuesses * wordLength; i++) {
         const tile = document.createElement("div");
@@ -248,7 +228,6 @@
       rows.forEach(row => {
         const rowDiv = document.createElement("div");
         rowDiv.classList.add("keyboard-row");
-
         for (let key of row.match(/Enter|Backspace|./g)) {
           const button = document.createElement("button");
           button.textContent = key === 'Backspace' ? '⌫' : key;
@@ -295,15 +274,13 @@
       }
     }
 
-    async function submitGuess() { // Made async because saveResult is async
+    async function submitGuess() {
       if (currentGuess.length !== wordLength) return;
       if (!allowedWords.includes(currentGuess)) {
         shakeRow();
         showAlert("Not a baby name");
         return;
       }
-
-      // Set firstGuessWord if this is the very first successful guess
       if (currentRow === 0 && firstGuessWord === null) {
           firstGuessWord = currentGuess;
       }
@@ -330,7 +307,7 @@
 
       setTimeout(() => {
         if (currentGuess === targetWord) {
-          handleWin(); // Call handleWin function
+          handleWin();
           return;
         }
 
@@ -359,54 +336,44 @@
       }
     }
 
-    // --- Modal Control Functions & Firebase Interaction (All within the module) ---
-
-    // This function will be exposed globally
     function startGame() {
       introScreen.classList.add("hidden");
-      startTime = Date.now(); // Reset start time when game begins
+      startTime = Date.now();
       totalWrongGuesses = 0;
       firstGuessWord = null;
       currentRow = 0;
       currentGuess = "";
-      // No need to recreate board/keyboard here, they are made on DOMContentLoaded.
     }
 
-    // This function will be exposed globally
     function restartGame() {
       window.location.reload();
     }
 
     function handleWin() {
         console.log("handleWin triggered");
-        // WIN_MESSAGE needs to be globally available from win-message.js
         if (typeof WIN_MESSAGE !== 'undefined') {
             winMessageContainer.innerHTML = WIN_MESSAGE;
         } else {
-            winMessageContainer.innerHTML = "You Win!"; // Fallback
+            winMessageContainer.innerHTML = "You Win!";
         }
-        winScreen.classList.remove("hidden"); // Show win screen
-
-        // Now, immediately open the name modal on top of the win screen
+        winScreen.classList.remove("hidden");
         openNameModal();
     }
 
     function openNameModal() {
         console.log("openNameModal called!");
         nameModal.classList.remove("hidden");
-        playerNameInput.focus(); // Give focus to the input field
-        // Removed: winScreen.classList.add("hidden"); -- WIN SCREEN STAYS VISIBLE BEHIND
+        playerNameInput.focus();
         finalScoreboardModal.classList.add("hidden"); // Ensure scoreboard is hidden
     }
 
-    function closeNameModal() { // Called when user clicks "No Thanks" or after "Submit"
+    function closeNameModal() {
         console.log("closeNameModal called!");
         nameModal.classList.add("hidden");
-        playerNameInput.value = ''; // Clear input field
-        // DO NOT automatically show scoreboard here. The win-screen should remain.
+        playerNameInput.value = '';
+        // No automatic call to showScoreboard here. User will click 'See Scoreboard'.
     }
 
-    // Save player result to Firestore
     async function saveResult(name, guesses, time, firstGuess) {
       try {
         await addDoc(collection(db, "scoreboard"), {
@@ -422,14 +389,13 @@
       }
     }
 
-    // Fetch and display scoreboard (now explicitly called by button)
+    // This function is now explicitly called by the 'See Scoreboard' button
     async function showScoreboard() {
       console.log("showScoreboard called!");
-      // Order by guesses ascending, then by time ascending
       const q = query(collection(db, "scoreboard"), orderBy("guesses", "asc"), orderBy("time", "asc"));
       const querySnapshot = await getDocs(q);
 
-      let scoreboardHtml = "<h3>Scoreboard</h3><table><thead><tr><th>Name</th><th>Guesses</th><th><th>Time (s)</th><th>First Guess</th></tr></thead><tbody>";
+      let scoreboardHtml = "<h3>Scoreboard</h3><table><thead><tr><th>Name</th><th>Guesses</th><th>Time (s)</th><th>First Guess</th></tr></thead><tbody>";
       querySnapshot.forEach(doc => {
         const data = doc.data();
         scoreboardHtml += `<tr><td>${data.name}</td><td>${data.guesses}</td><td>${data.time}</td><td>${data.firstGuess || 'N/A'}</td></tr>`;
@@ -437,21 +403,19 @@
       scoreboardHtml += "</tbody></table>";
       scoreboardContentDiv.innerHTML = scoreboardHtml;
 
-      // Hide all other major game/modal screens before showing the scoreboard
-      winScreen.classList.add("hidden"); // Hide the win screen when showing scoreboard
+      // Hide other modals when scoreboard is shown
+      winScreen.classList.add("hidden");
       loseScreen.classList.add("hidden");
       nameModal.classList.add("hidden");
 
-      // Show the final scoreboard modal
       finalScoreboardModal.classList.remove("hidden");
     }
 
-    // Function called by the submit button in the modal
     async function submitScore() {
-        console.log("Submit button clicked!"); // For debugging
+        console.log("Submit button clicked!");
         const name = playerNameInput.value.trim();
         if (!name) {
-            showAlert("Please enter a name."); // Use your custom alert for consistency
+            showAlert("Please enter a name.");
             return;
         }
 
@@ -462,10 +426,7 @@
         closeNameModal(); // This will hide the name modal. The win-screen remains visible.
     }
 
-
-    // --- Initialization Logic ---
     document.addEventListener("DOMContentLoaded", () => {
-        // Find the start game button and attach the event listener
         startGameButton.addEventListener("click", startGame);
 
         fetch("words.json")
@@ -481,18 +442,15 @@
                 createKeyboard();
                 document.addEventListener("keydown", e => handleKey(e.key));
 
-                // Ensure initial screen states
                 introScreen.classList.remove("hidden");
                 winScreen.classList.add("hidden");
                 loseScreen.classList.add("hidden");
                 nameModal.classList.add("hidden");
-                finalScoreboardModal.classList.add("hidden"); // Ensure the new scoreboard modal is hidden
+                finalScoreboardModal.classList.add("hidden");
             })
             .catch(error => console.error("Error loading words.json:", error));
     });
 
-    // Expose necessary functions to the global window object.
-    // We'll create a single `gameLogic` object to hold them cleanly.
     window.gameLogic = {
         startGame: startGame,
         restartGame: restartGame,
@@ -502,7 +460,6 @@
         showScoreboard: showScoreboard,
         handleKey: handleKey
     };
-
   </script>
 </body>
 </html>
