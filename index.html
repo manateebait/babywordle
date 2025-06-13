@@ -145,7 +145,7 @@
   <div id="win-screen" class="modal hidden">
     <div id="win-message-container"></div>
     <button onclick="window.gameLogic.showScoreboard()">See Scoreboard</button>
-    </div>
+  </div>
 
   <div id="lose-screen" class="modal hidden">
     <h2>Better luck next time!</h2>
@@ -364,14 +364,13 @@
         console.log("openNameModal called!");
         nameModal.classList.remove("hidden");
         playerNameInput.focus();
-        finalScoreboardModal.classList.add("hidden"); // Ensure scoreboard is hidden
+        finalScoreboardModal.classList.add("hidden");
     }
 
     function closeNameModal() {
         console.log("closeNameModal called!");
         nameModal.classList.add("hidden");
         playerNameInput.value = '';
-        // No automatic call to showScoreboard here. User will click 'See Scoreboard'.
     }
 
     async function saveResult(name, guesses, time, firstGuess) {
@@ -389,26 +388,45 @@
       }
     }
 
-    // This function is now explicitly called by the 'See Scoreboard' button
+    // showScoreboard function to be called by button
     async function showScoreboard() {
-      console.log("showScoreboard called!");
-      const q = query(collection(db, "scoreboard"), orderBy("guesses", "asc"), orderBy("time", "asc"));
-      const querySnapshot = await getDocs(q);
+      console.log("showScoreboard called!"); // Check if this log appears
+      try {
+          // Verify that scoreboardContentDiv is not null
+          if (!scoreboardContentDiv) {
+              console.error("scoreboardContentDiv element not found!");
+              showAlert("Error: Scoreboard display area not found.");
+              return;
+          }
+          // Verify that finalScoreboardModal is not null
+          if (!finalScoreboardModal) {
+              console.error("finalScoreboardModal element not found!");
+              showAlert("Error: Scoreboard modal not found.");
+              return;
+          }
 
-      let scoreboardHtml = "<h3>Scoreboard</h3><table><thead><tr><th>Name</th><th>Guesses</th><th>Time (s)</th><th>First Guess</th></tr></thead><tbody>";
-      querySnapshot.forEach(doc => {
-        const data = doc.data();
-        scoreboardHtml += `<tr><td>${data.name}</td><td>${data.guesses}</td><td>${data.time}</td><td>${data.firstGuess || 'N/A'}</td></tr>`;
-      });
-      scoreboardHtml += "</tbody></table>";
-      scoreboardContentDiv.innerHTML = scoreboardHtml;
+          const q = query(collection(db, "scoreboard"), orderBy("guesses", "asc"), orderBy("time", "asc"));
+          const querySnapshot = await getDocs(q);
 
-      // Hide other modals when scoreboard is shown
-      winScreen.classList.add("hidden");
-      loseScreen.classList.add("hidden");
-      nameModal.classList.add("hidden");
+          let scoreboardHtml = "<h3>Scoreboard</h3><table><thead><tr><th>Name</th><th>Guesses</th><th>Time (s)</th><th>First Guess</th></tr></thead><tbody>";
+          querySnapshot.forEach(doc => {
+            const data = doc.data();
+            scoreboardHtml += `<tr><td>${data.name}</td><td>${data.guesses}</td><td>${data.time}</td><td>${data.firstGuess || 'N/A'}</td></tr>`;
+          });
+          scoreboardHtml += "</tbody></table>";
+          scoreboardContentDiv.innerHTML = scoreboardHtml;
 
-      finalScoreboardModal.classList.remove("hidden");
+          // Hide other modals when scoreboard is shown
+          winScreen.classList.add("hidden");
+          loseScreen.classList.add("hidden");
+          nameModal.classList.add("hidden");
+
+          finalScoreboardModal.classList.remove("hidden"); // Show the scoreboard modal
+          console.log("Scoreboard displayed successfully.");
+      } catch (error) {
+          console.error("Error fetching scoreboard:", error); // Look for this in the console
+          showAlert("Error loading scoreboard. Check console for details.");
+      }
     }
 
     async function submitScore() {
@@ -423,11 +441,26 @@
         const time = Math.floor((Date.now() - startTime) / 1000);
 
         await saveResult(name, guesses, time, firstGuessWord);
-        closeNameModal(); // This will hide the name modal. The win-screen remains visible.
+        closeNameModal();
     }
 
     document.addEventListener("DOMContentLoaded", () => {
-        startGameButton.addEventListener("click", startGame);
+        // Log references to major elements to ensure they are found
+        console.log("DOMContentLoaded fired.");
+        console.log("introScreen:", introScreen);
+        console.log("winScreen:", winScreen);
+        console.log("loseScreen:", loseScreen);
+        console.log("nameModal:", nameModal);
+        console.log("finalScoreboardModal:", finalScoreboardModal);
+        console.log("scoreboardContentDiv:", scoreboardContentDiv);
+
+
+        if (startGameButton) { // Check if button exists before adding listener
+            startGameButton.addEventListener("click", startGame);
+        } else {
+            console.error("startGameButton not found!");
+        }
+
 
         fetch("words.json")
             .then(res => {
