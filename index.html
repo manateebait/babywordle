@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -420,9 +419,6 @@
   allKeys.forEach(key => {
     key.classList.remove("correct", "present", "absent");
   });
-
-  // Re-enable keyboard input
-  document.addEventListener("keydown", e => handleKey(e.key));
 }
 
 
@@ -584,7 +580,11 @@
                 allowedWords = data.allowedWords.map(w => w.toLowerCase());
                 createBoard();
                 createKeyboard();
-                document.addEventListener("keydown", e => handleKey(e.key));
+                document.addEventListener("keydown", onKeyDown);
+
+                function onKeyDown(e) {
+                  handleKey(e.key);
+                }
 
                 introScreen.classList.remove("hidden");
                 winScreen.classList.add("hidden");
