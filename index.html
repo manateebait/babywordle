@@ -424,25 +424,42 @@
 
     function handleWin() {
         console.log("handleWin triggered");
+       localStorage.setItem("babyWordleSolved", "true");
         if (typeof WIN_MESSAGE !== 'undefined') {
             winMessageContainer.innerHTML = WIN_MESSAGE;
         } else {
             winMessageContainer.innerHTML = "You Win!";
         }
         winScreen.classList.remove("hidden");
-        openNameModal();
+        if (localStorage.getItem("babyWordleSolved") === "true") {
+  console.log("Player has already submitted; skipping name modal.");
+} else {
+  openNameModal();
+}
+
     }
 
     function openNameModal() {
-        console.log("openNameModal called!");
-        nameModal.classList.remove("hidden");
-        playerNameInput.focus();
-        playerNameInput.value = ''; // Clear input on open
-        // Ensure buttons are enabled when modal opens
-        if (submitNameButton) submitNameButton.disabled = false;
-        if (cancelNameButton) cancelNameButton.disabled = false;
-        finalScoreboardModal.classList.add("hidden");
-    }
+  console.log("openNameModal called!");
+  nameModal.classList.remove("hidden");
+  playerNameInput.value = "";
+
+  const hasAlreadyWon = localStorage.getItem("babyWordleSolved") === "true";
+
+  if (hasAlreadyWon) {
+    playerNameInput.disabled = true;
+    submitNameButton.disabled = true;
+    submitNameButton.textContent = "Already Submitted";
+  } else {
+    playerNameInput.disabled = false;
+    submitNameButton.disabled = false;
+    submitNameButton.textContent = "Submit";
+  }
+
+  cancelNameButton.disabled = false;
+  finalScoreboardModal.classList.add("hidden");
+}
+
 
     function closeNameModal() {
         console.log("closeNameModal called!");
