@@ -247,13 +247,13 @@
     let currentGameGuesses = 0; // Guesses for the current game
     let firstGameGuess = null; // First guess of the current game
     let targetWord = ""; // Will be set dynamically per game
-      
+
     const wordLength = 6;
     const maxGuesses = 6;
     let currentRow = 0;
     let currentGuess = "";
     let allowedWords = [];
-    const encodedTarget = [69, 77, 77, 69, 84, 84]; // This will be the *default* or initial word
+    const defaultEncodedTarget = [69, 77, 77, 69, 84, 84]; // Use a default for first game or if no words.json
 
     const board = document.getElementById("game-board");
     const keyboard = document.getElementById("keyboard");
@@ -271,8 +271,8 @@
     const cancelNameButton = document.getElementById("cancelNameButton");
 
 
+    // ONLY CREATE BOARD ELEMENTS ONCE
     function createBoard() {
-      board.innerHTML = ''; // Clear existing tiles if any
       for (let i = 0; i < maxGuesses * wordLength; i++) {
         const tile = document.createElement("div");
         tile.classList.add("tile");
@@ -289,6 +289,7 @@
       });
     }
 
+    // ONLY CREATE KEYBOARD ELEMENTS ONCE
     function createKeyboard() {
       const rows = [
         "QWERTYUIOP",
@@ -296,7 +297,6 @@
         "EnterZXCVBNMBackspace"
       ];
 
-      keyboard.innerHTML = ''; // Clear existing keyboard
       rows.forEach(row => {
         const rowDiv = document.createElement("div");
         rowDiv.classList.add("keyboard-row");
@@ -313,14 +313,22 @@
     }
 
     function handleKey(key) {
-      if (key === "Backspace") {
-        currentGuess = currentGuess.slice(0, -1);
-      } else if (key === "Enter") {
-        submitGuess();
-      } else if (key.length === 1 && currentGuess.length < wordLength) {
-        currentGuess += key.toLowerCase();
+      // Ensure game is active before processing key presses
+      if (introScreen.classList.contains("hidden") && 
+          winScreen.classList.contains("hidden") && 
+          loseScreen.classList.contains("hidden") && 
+          nameModal.classList.contains("hidden") &&
+          finalScoreboardModal.classList.contains("hidden")) {
+          
+        if (key === "Backspace") {
+          currentGuess = currentGuess.slice(0, -1);
+        } else if (key === "Enter") {
+          submitGuess();
+        } else if (key.length === 1 && key.match(/[a-zA-Z]/) && currentGuess.length < wordLength) {
+          currentGuess += key.toLowerCase();
+        }
+        updateBoard();
       }
-      updateBoard();
     }
 
     function updateBoard() {
@@ -364,7 +372,7 @@
       }
 
       const tiles = document.querySelectorAll(".tile");
-      let matchCount = 0; // Track correct letters for animation sequence
+      
 
       for (let i = 0; i < wordLength; i++) {
         const index = currentRow * wordLength + i;
@@ -375,7 +383,6 @@
           if (letter === targetWord[i]) {
             tile.classList.add("correct");
             updateKey(letter, "correct");
-            matchCount++;
           } else if (targetWord.includes(letter)) {
             tile.classList.add("present");
             updateKey(letter, "present");
@@ -422,9 +429,7 @@
     function startGame() {
       introScreen.classList.add("hidden");
       // Initialize game-specific variables for the first game or subsequent games
-      resetGame();
-      // Set the target word. For now, it's fixed. You might randomize this later.
-      targetWord = String.fromCharCode(...encodedTarget).toLowerCase(); 
+      resetGame(); // This will also set the target word
     }
 
     // New function to reset game state without reloading the page
@@ -435,11 +440,14 @@
       firstGameGuess = null; // Reset first guess for the new game
       gameStartTime = Date.now(); // Start time for the current game
 
-      // Clear the board visuals
+      // Clear the board visuals by iterating through existing tiles
       const tiles = document.querySelectorAll(".tile");
       tiles.forEach(tile => {
         tile.textContent = "";
         tile.classList.remove("correct", "present", "absent", "flip", "shake");
+        // Ensure any inline styles are removed if they were added dynamically (though not typically for colors)
+        tile.style.backgroundColor = '';
+        tile.style.borderColor = '';
       });
 
       // Reset keyboard colors
@@ -451,9 +459,16 @@
       nameModal.classList.add("hidden");
       finalScoreboardModal.classList.add("hidden");
 
-      // You might want to generate a new target word here for each new game
-      // For now, it reuses the one from encodedTarget
-      // targetWord = allowedWords[Math.floor(Math.random() * allowedWords.length)]; 
+      // Set a new target word for the current game
+      // This ensures a new word for each "Try Again" or "Start Game" click
+      if (allowedWords.length > 0) {
+        targetWord = allowedWords[Math.floor(Math.random() * allowedWords.length)];
+      } else {
+        // Fallback to default if words.json failed to load
+        targetWord = String.fromCharCode(...defaultEncodedTarget).toLowerCase();
+        console.warn("Using default target word as allowedWords is empty.");
+      }
+      console.log("New target word for this game:", targetWord); // For debugging
     }
 
 
@@ -461,8 +476,6 @@
       totalSessionGuesses += maxGuesses; // All 6 guesses were used in this lost game
       console.log(`Total session guesses after loss: ${totalSessionGuesses}`);
       resetGame();
-      // Optionally, set a new target word here for a new game
-      // targetWord = allowedWords[Math.floor(Math.random() * allowedWords.length)]; 
     }
 
     function handleWin() {
@@ -580,10 +593,9 @@
         try {
             await saveResult(name, guesses, time, firstGuess);
             console.log("Score submission successful, closing modal.");
+            
             // After successful submission, reset session variables for a completely new session start
-            // if the user decides to start a new "session" after submitting.
-            // If you want to keep accumulating for *this* current page load, then don't reset here.
-            // For now, we'll reset them as if a new overall session starts after submitting.
+            // This ensures that if they submit and then play again, it's a fresh session for the scoreboard.
             overallSessionTimeStart = Date.now(); 
             totalSessionGuesses = 0;
             firstOverallGuess = null;
@@ -610,15 +622,11 @@
 
     document.addEventListener("DOMContentLoaded", () => {
         console.log("DOMContentLoaded fired.");
-        console.log("introScreen:", introScreen);
-        console.log("winScreen:", winScreen);
-        console.log("loseScreen:", loseScreen);
-        console.log("nameModal:", nameModal);
-        console.log("finalScoreboardModal:", finalScoreboardModal);
-        console.log("scoreboardTableContainer:", scoreboardTableContainer);
-        console.log("submitNameButton:", submitNameButton);
-        console.log("cancelNameButton:", cancelNameButton);
-
+        
+        // ONLY CREATE BOARD AND KEYBOARD ONCE AT DOM CONTENT LOAD
+        createBoard();
+        createKeyboard();
+        document.addEventListener("keydown", e => handleKey(e.key));
 
         if (startGameButton) {
             startGameButton.addEventListener("click", startGame);
@@ -635,9 +643,16 @@
             })
             .then(data => {
                 allowedWords = data.allowedWords.map(w => w.toLowerCase());
-                createBoard();
-                createKeyboard();
-                document.addEventListener("keydown", e => handleKey(e.key));
+                
+                // Set the initial target word after words are loaded
+                if (allowedWords.length > 0) {
+                  targetWord = allowedWords[Math.floor(Math.random() * allowedWords.length)];
+                } else {
+                  targetWord = String.fromCharCode(...defaultEncodedTarget).toLowerCase();
+                  console.warn("words.json is empty or failed to load. Using default target word.");
+                }
+                console.log("Initial target word set to:", targetWord);
+
 
                 introScreen.classList.remove("hidden");
                 winScreen.classList.add("hidden");
@@ -650,7 +665,7 @@
 
     window.gameLogic = {
         startGame: startGame,
-        startNewGameAfterLoss: startNewGameAfterLoss, // Changed from restartGame
+        startNewGameAfterLoss: startNewGameAfterLoss,
         submitScore: submitScore,
         openNameModal: openNameModal,
         closeNameModal: closeNameModal,
