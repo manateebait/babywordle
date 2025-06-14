@@ -443,21 +443,26 @@
         if (cancelNameButton) cancelNameButton.disabled = true;
     }
 
-    async function saveResult(name, guesses, time, firstGuess) {
-      try {
-        await addDoc(collection(db, "scoreboard"), {
-          name,
-          guesses,
-          time,
-          firstGuess,
-          timestamp: Date.now()
-        });
-        console.log("Score saved successfully!");
-      } catch (e) {
-        console.error("Error adding document: ", e);
-        throw e;
-      }
-    }
+async function saveResult(name, guesses, time, firstGuessWord) { // <-- Using firstGuessWord here as in your code
+  try {
+    const dataToSave = {
+      name: name,
+      guesses: guesses,
+      time: time,
+      firstGuess: firstGuessWord, // This is the actual field name in Firestore
+      timestamp: Date.now()
+    };
+    console.log("Attempting to save data to Firestore:", dataToSave); // <--- ADD THIS LINE
+    console.log("Type of firstGuessWord:", typeof firstGuessWord, "Value:", firstGuessWord); // <--- ADD THIS LINE FOR DEBUGGING
+    console.log("Type of time:", typeof time, "Value:", time); // <--- ADD THIS LINE FOR DEBUGGING
+
+    await addDoc(collection(db, "scoreboard"), dataToSave); // <-- Use the prepared object
+    console.log("Score saved successfully!");
+  } catch (e) {
+    console.error("Error adding document: ", e);
+    throw e;
+  }
+}
 
     // Helper function to format time in M:SS
     function formatTime(seconds) {
