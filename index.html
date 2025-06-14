@@ -69,11 +69,18 @@
         width: 300px;
         position: relative;
         z-index: 11;
-        overflow-x: hidden; /* Prevent horizontal scroll for Name Modal */
+        /* Consolidated mobile compatibility styles here */
+        max-height: 90vh; /* Allow modal to take more height if needed */
+        overflow-y: auto; /* Make modal content scrollable */
+        overflow-x: hidden; /* Prevent horizontal scroll */
+        display: flex; /* Use flexbox for internal layout */
+        flex-direction: column; /* Stack items vertically */
+        justify-content: flex-start; /* Align content to start, allowing scrollIntoView to work better */
     }
     #name-modal input[type="text"] {
         padding: 10px;
         width: calc(100% - 20px);
+        box-sizing: border-box; /* Crucial: ensures padding is included in width */
         margin: 15px 0;
         border: 1px solid #555;
         border-radius: 4px;
@@ -82,8 +89,9 @@
         font-size: 1em;
     }
     #name-modal .modal-buttons {
-        margin-top: 15px;
+        margin-top: 15px; /* Space between input and buttons */
         text-align: center;
+        flex-shrink: 0; /* Prevent buttons from shrinking if modal content grows */
     }
     #name-modal button {
         margin: 5px;
@@ -112,7 +120,7 @@
         padding-right: 5px; /* Space for scrollbar on right, if present */
     }
     #scoreboard table {
-        width: 100%; /* Make table fill its container */
+        width: 100%;
         border-collapse: collapse;
         margin-top: 10px;
         font-size: 0.9em;
@@ -240,8 +248,12 @@
     let currentRow = 0;
     let currentGuess = "";
     let allowedWords = [];
-    const encodedTarget = [69, 77, 77, 69, 84, 84];
+    const encodedTarget = [69, 77, 77, 69, 84, 84]; // Target word "EMMETT"
     const targetWord = String.fromCharCode(...encodedTarget).toLowerCase();
+
+    // Key for local storage to prevent re-submissions for the same word
+    const LAST_WIN_KEY = 'babyWordleWon_' + targetWord; // Unique key per word
+
 
     const board = document.getElementById("game-board");
     const keyboard = document.getElementById("keyboard");
@@ -289,7 +301,29 @@
       });
     }
 
+    // Function to disable/enable keyboard input
+    function setKeyboardEnabled(enabled) {
+        const keyboardButtons = document.querySelectorAll('#keyboard button');
+        keyboardButtons.forEach(button => {
+            button.disabled = !enabled;
+        });
+        document.removeEventListener("keydown", handleKey); // Remove to disable
+        if (enabled) {
+            document.addEventListener("keydown", handleKey); // Add to enable
+        }
+    }
+
     function handleKey(key) {
+      // If keyboard is explicitly disabled, do nothing
+      if (document.activeElement && document.activeElement.tagName === 'INPUT') {
+          // Allow input into the name field
+          return;
+      }
+      // Check if any keyboard button is disabled, if so, the keyboard is generally disabled
+      if (document.querySelector('#keyboard button:disabled')) {
+          return;
+      }
+
       if (key === "Backspace") {
         currentGuess = currentGuess.slice(0, -1);
       } else if (key === "Enter") {
@@ -324,6 +358,11 @@
     }
 
     async function submitGuess() {
+      // Prevent guess submission if game already won (via local storage)
+      if (localStorage.getItem(LAST_WIN_KEY)) {
+          showAlert("You've already won this word!");
+          return;
+      }
       if (currentGuess.length !== wordLength) return;
       if (!allowedWords.includes(currentGuess)) {
         shakeRow();
@@ -392,14 +431,21 @@
       firstGuessWord = null;
       currentRow = 0;
       currentGuess = "";
+      setKeyboardEnabled(true); // Ensure keyboard is enabled when game starts
     }
 
     function restartGame() {
+      // Clear the local storage flag for the current word to allow replaying
+      localStorage.removeItem(LAST_WIN_KEY);
       window.location.reload();
     }
 
     function handleWin() {
         console.log("handleWin triggered");
+        // Set local storage flag to prevent re-submission for this word
+        localStorage.setItem(LAST_WIN_KEY, 'true');
+        setKeyboardEnabled(false); // Disable game keyboard after winning
+
         if (typeof WIN_MESSAGE !== 'undefined') {
             winMessageContainer.innerHTML = WIN_MESSAGE;
         } else {
@@ -421,8 +467,8 @@
         // NEW: Scroll the window/body to ensure the input and buttons are visible
         // This is a common mobile solution for keyboard overlays.
         setTimeout(() => {
-            // Use 'nearest' to ensure it's just barely visible if that's better, or 'center' for more space
-            playerNameInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); 
+            // Use 'start' to push the element to the top of the visible area
+            playerNameInput.scrollIntoView({ behavior: 'smooth', block: 'start' }); 
         }, 100); // Small delay to allow keyboard to appear
     }
 
@@ -500,6 +546,13 @@
 
     async function submitScore() {
         console.log("Submit button clicked!");
+        // Prevent submission if already won (double-check, though keyboard should be disabled)
+        if (localStorage.getItem(LAST_WIN_KEY)) {
+            showAlert("You've already submitted a score for this word.");
+            closeNameModal(); // Close the name modal
+            return;
+        }
+
         const name = playerNameInput.value.trim();
         if (!name) {
             showAlert("Please enter a name.");
@@ -563,7 +616,8 @@
                 allowedWords = data.allowedWords.map(w => w.toLowerCase());
                 createBoard();
                 createKeyboard();
-                document.addEventListener("keydown", e => handleKey(e.key));
+                // We've moved keydown listener to setKeyboardEnabled
+                // document.addEventListener("keydown", handleKey);
 
                 introScreen.classList.remove("hidden");
                 winScreen.classList.add("hidden");
