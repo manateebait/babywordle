@@ -392,6 +392,7 @@
     }
 
     function startGame() {
+      sessionStorage.setItem('gameStarted', 'true'); 
       introScreen.classList.add("hidden");
       startTime = Date.now();
       totalWrongGuesses = 0;
@@ -401,6 +402,7 @@
     }
 
     function restartGame() {
+      finalScoreboardModal.classList.add("hidden");
       window.location.reload();
     }
 
@@ -564,10 +566,17 @@
                 createKeyboard();
                 document.addEventListener("keydown", e => handleKey(e.key));
 
-                introScreen.classList.remove("hidden");
-                winScreen.classList.add("hidden");
-                loseScreen.classList.add("hidden");
-                nameModal.classList.add("hidden");
+// Only show intro screen on initial load
+                if (sessionStorage.getItem('gameStarted') !== 'true') {
+                    introScreen.classList.remove("hidden");
+                } else {
+                    // If game was already started, hide intro and directly start game (or show relevant screen)
+                    introScreen.classList.add("hidden");
+                    startGame(); // Automatically start the game if not first load
+                }
+                winScreen.classList.add("hidden");
+                loseScreen.classList.add("hidden");
+                nameModal.classList.add("hidden");
                 finalScoreboardModal.classList.add("hidden");
             })
             .catch(error => console.error("Error loading words.json:", error));
