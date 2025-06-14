@@ -401,8 +401,30 @@
     }
 
     function restartGame() {
-      window.location.reload();
-    }
+  // Clear the lose screen
+  loseScreen.classList.add("hidden");
+
+  // Reset guess tracking
+  currentGuess = "";
+  currentRow = 0;
+
+  // Clear the tiles
+  const tiles = document.querySelectorAll(".tile");
+  tiles.forEach(tile => {
+    tile.textContent = "";
+    tile.className = "tile"; // Reset all styles
+  });
+
+  // Reset keyboard key styles
+  const allKeys = keyboard.querySelectorAll("button");
+  allKeys.forEach(key => {
+    key.classList.remove("correct", "present", "absent");
+  });
+
+  // Re-enable keyboard input
+  document.addEventListener("keydown", e => handleKey(e.key));
+}
+
 
     function handleWin() {
         console.log("handleWin triggered");
