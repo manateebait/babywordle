@@ -69,105 +69,29 @@ button {
   display: none;
 }
 
-/* --- Scoreboard Specific Styles (Consolidated & Finalized for style.css) --- */
-
-/* Overall container for the scoreboard modal's content */
-#final-scoreboard-modal .modal-content {
-    background: #1e1e1e; /* Background color of the scoreboard modal */
-    padding: 10px; /* Reduced padding for the scoreboard content */
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-    max-width: calc(100vw - 20px); /* Maximize width, leaving 10px on each side of screen */
-    width: 700px; /* Max width for desktop */
-    color: #eee;
-    display: flex; /* Use flex for main content layout */
-    flex-direction: column; /* Stack header, table container, buttons vertically */
-    position: relative; /* Needed for absolute positioning of loading indicator */
-}
-
-/* Dedicated container for the scrollable table */
-#scoreboard-table-container {
-    max-height: 250px; /* Fixed height for scrolling (adjust as needed for 10 rows) */
-    overflow-y: auto; /* Enable vertical scroll */
-    overflow-x: hidden; /* Prevent horizontal scroll */
-    margin-bottom: 10px; /* Space between table and button */
-    flex-grow: 1; /* Allow container to grow within flex column */
-    padding-right: 5px; /* Space for scrollbar on right, if present */
-    opacity: 0; /* Start hidden */
-    transition: opacity 0.3s ease-in-out; /* Smooth transition */
-}
-
-/* Base table styles (ensure width is 100% of its container) */
-#scoreboard-table-container table { /* CORRECTED SELECTOR */
+#scoreboard-table-container table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 10px;
     font-size: 0.9em;
-    table-layout: fixed; /* Fixed table layout for better column control */
+    table-layout: fixed;
 }
 
-/* Specific column widths for the scoreboard table (Adjust these percentages as needed) */
-#scoreboard-table-container th:nth-child(1), #scoreboard-table-container td:nth-child(1) { width: 35%; } /* Name */
-#scoreboard-table-container th:nth-child(2), #scoreboard-table-container td:nth-child(2) { width: 15%; } /* Guesses */
-#scoreboard-table-container th:nth-child(3), #scoreboard-table-container td:nth-child(3) { width: 20%; } /* Time */
-#scoreboard-table-container th:nth-child(4), #scoreboard-table-container td:nth-child(4) { width: 30%; } /* First Guess */
-
-/* Styles for table headers and cells */
 #scoreboard-table-container th,
-#scoreboard-table-container td { /* CORRECTED SELECTOR */
-    padding: 10px 5px; /* Adjust vertical and horizontal padding as needed */
+#scoreboard-table-container td {
+    padding: 10px 5px; /* Slightly more vertical padding, reduced horizontal padding for more content width */
     border: 1px solid #444;
     text-align: center;
     word-break: break-word; /* Ensure long words break */
 }
 
-/* Specific style for table headers */
-#scoreboard-table-container th { /* CORRECTED SELECTOR */
+#scoreboard-table-container th {
     background-color: #333;
 }
 
-/* Styles for the scoreboard title inside the modal */
-#final-scoreboard-modal .modal-content h3 {
-    margin-top: 0;
-    margin-bottom: 10px;
-    text-align: center;
+.modal.hidden {
+  display: none;
 }
-
-/* Styles for the buttons wrapper below the scoreboard table */
-#final-scoreboard-modal .modal-buttons {
-    margin-top: auto; /* Pushes button wrapper to the bottom of the flex column */
-    padding-top: 15px;
-    text-align: center;
-    flex-shrink: 0;
-}
-
-/* Styles for the loading indicator */
-#scoreboard-loading-indicator {
-    font-size: 1.2em;
-    padding: 20px;
-    text-align: center;
-    color: #bbb;
-    opacity: 1; /* Start visible */
-    transition: opacity 0.3s ease-in-out; /* Smooth transition */
-    position: absolute; /* Position absolutely to overlay content */
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column; /* To center text vertically */
-    justify-content: center;
-    align-items: center;
-    background: rgba(18, 18, 19, 0.95); /* Cover content while loading */
-    z-index: 2; /* Ensure it's above the table container */
-    pointer-events: none; /* Allow clicks to pass through if it's just fading out */
-}
-/* This class hides the loading indicator */
-#scoreboard-loading-indicator.hidden {
-    opacity: 0;
-}
-
-/* Original #name-modal.modal definition that was in style.css */
 #name-modal.modal {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
@@ -176,15 +100,4 @@ button {
   justify-content: center;
   align-items: center;
   z-index: 100;
-}
-
-/* Media Queries (Original from your stylesheet) */
-@media (max-width: 600px) {
-  .tile { width: 50px; height: 50px; }
-  #game-board { grid-template-columns: repeat(6, 50px); gap: 6px; justify-content: center; max-width: 360px; margin: 0 auto; }
-  #keyboard { max-width: 100%; padding: 0 4px; }
-  .keyboard-row { width: 100%; display: flex; justify-content: center; gap: 3px; flex-wrap: nowrap; }
-  .keyboard-row button { font-size: 20px; padding: 12px 0; min-width: auto; height: 48px; flex: 1; }
-  #key-Enter { font-size: 12px; flex: 1.2; }
-  #key-Backspace { font-size: 20px; flex: 1.2; }
 }
