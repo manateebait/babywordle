@@ -9,7 +9,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <style>
     body { font-family: sans-serif; text-align: center; background: #121213; color: #fff; margin: 0; padding: 0 10px; }
-    /* REFINED: Base modal styles for robust Start Game button */
     #intro-screen, .modal {
         position: fixed;
         top: 0;
@@ -18,7 +17,7 @@
         height: 100%;
         background: rgba(18, 18, 19, 0.95);
         color: #fff;
-        display: flex; /* Maintain original display:flex for consistency across working versions */
+        display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
@@ -26,11 +25,6 @@
         padding: 20px;
         box-sizing: border-box;
     }
-    /* Ensure intro screen explicitly has a higher z-index to be on top */
-    #intro-screen {
-        z-index: 20; 
-    }
-
     .green-box { display: inline-block; background-color: #538d4e; color: #fff; padding: 10px 12px; font-weight: bold; font-size: 1.2em; border-radius: 4px; }
     h1 { margin-top: 30px; margin-bottom: 10px; font-size: 1.8em; }
     #game-board { display: grid; grid-template-columns: repeat(6, 60px); gap: 6px; justify-content: center; margin: 30px auto; max-width: 600px; }
@@ -75,12 +69,11 @@
         width: 300px;
         position: relative;
         z-index: 11;
-        max-height: 80vh; 
-        overflow-y: auto;   
-        overflow-x: hidden; 
-        display: flex; 
-        flex-direction: column; 
-        justify-content: space-between; 
+        /* Reverted these for mobile keyboard compatibility */
+        /* max-height: 80vh; */ 
+        /* overflow-y: auto; */
+        overflow-x: hidden; /* Keep horizontal scroll hidden */
+        /* Removed flex-direction/justify-content to let browser handle scroll more naturally */
     }
     #name-modal input[type="text"] {
         padding: 10px;
@@ -93,7 +86,7 @@
         font-size: 1em;
     }
     #name-modal .modal-buttons {
-        margin-top: 15px; 
+        margin-top: 15px; /* Keep a standard margin */
         text-align: center;
     }
     #name-modal button {
@@ -103,30 +96,30 @@
     
     /* Scoreboard Specific Styles */
     #final-scoreboard-modal .modal-content {
-        background: #1e1e1f;
+        background: #1e1e1e;
         padding: 15px;
         border-radius: 8px;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
         max-width: 80%; /* Scoreboard content fills 80% of the modal */
         width: 500px; /* Max width for desktop */
         color: #eee;
-        display: flex; 
+        display: flex; /* Flex for main modal content */
         flex-direction: column;
     }
     /* Dedicated container for the scrollable table */
     #scoreboard-table-container {
-        max-height: 250px; 
-        overflow-y: auto;
-        overflow-x: hidden; 
-        margin-bottom: 10px; 
-        flex-grow: 1; 
+        max-height: 250px; /* Fixed height for scrolling (adjust as needed) */
+        overflow-y: auto; /* Enable vertical scroll */
+        overflow-x: hidden; /* Prevent horizontal scroll */
+        margin-bottom: 10px; /* Space between table and button */
+        flex-grow: 1; /* Allow container to grow if needed */
     }
     #scoreboard table {
         width: 100%;
         border-collapse: collapse;
         margin-top: 10px;
         font-size: 0.9em;
-        table-layout: fixed; 
+        table-layout: fixed; /* Fixed table layout for better column control */
     }
     /* Column widths for better spacing */
     #scoreboard th:nth-child(1), #scoreboard td:nth-child(1) { width: 30%; } /* Name */
@@ -427,10 +420,10 @@
         if (submitNameButton) submitNameButton.disabled = false;
         if (cancelNameButton) cancelNameButton.disabled = false;
         finalScoreboardModal.classList.add("hidden");
-        // Scroll the input into view. Mobile browsers often handle this, but explicit call is safer.
+        // NEW: Scroll the window/body to ensure the input and buttons are visible
+        // This is a common mobile solution for keyboard overlays.
         setTimeout(() => {
-            // Using 'center' to push the element to the center of the visible area
-            playerNameInput.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
+            playerNameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }, 100); // Small delay to allow keyboard to appear
     }
 
@@ -443,26 +436,21 @@
         if (cancelNameButton) cancelNameButton.disabled = true;
     }
 
-async function saveResult(name, guesses, time, firstGuessWord) { // <-- Using firstGuessWord here as in your code
-  try {
-    const dataToSave = {
-      name: name,
-      guesses: guesses,
-      time: time,
-      firstGuess: firstGuessWord, // This is the actual field name in Firestore
-      timestamp: Date.now()
-    };
-    console.log("Attempting to save data to Firestore:", dataToSave); // <--- ADD THIS LINE
-    console.log("Type of firstGuessWord:", typeof firstGuessWord, "Value:", firstGuessWord); // <--- ADD THIS LINE FOR DEBUGGING
-    console.log("Type of time:", typeof time, "Value:", time); // <--- ADD THIS LINE FOR DEBUGGING
-
-    await addDoc(collection(db, "scoreboard"), dataToSave); // <-- Use the prepared object
-    console.log("Score saved successfully!");
-  } catch (e) {
-    console.error("Error adding document: ", e);
-    throw e;
-  }
-}
+    async function saveResult(name, guesses, time, firstGuess) {
+      try {
+        await addDoc(collection(db, "scoreboard"), {
+          name,
+          guesses,
+          time,
+          firstGuess,
+          timestamp: Date.now()
+        });
+        console.log("Score saved successfully!");
+      } catch (e) {
+        console.error("Error adding document: ", e);
+        throw e;
+      }
+    }
 
     // Helper function to format time in M:SS
     function formatTime(seconds) {
@@ -527,10 +515,8 @@ async function saveResult(name, guesses, time, firstGuessWord) { // <-- Using fi
         const time = Math.floor((Date.now() - startTime) / 1000);
 
         try {
-await addDoc(collection(db, "scoreboard"), {
-  name, guesses, time, firstGuessWord, timestamp: Date.now() //
-});
-sole.log("Score saved successfully!");
+            await saveResult(name, guesses, time, firstGuessWord);
+            console.log("Score submission successful, closing modal.");
         } catch (error) {
             console.error("Error during score submission:", error);
             showAlert("Failed to save score. Please try again. (See console for details)");
@@ -548,6 +534,7 @@ sole.log("Score saved successfully!");
         winScreen.classList.remove("hidden");
     }
 
+
     document.addEventListener("DOMContentLoaded", () => {
         console.log("DOMContentLoaded fired.");
         console.log("introScreen:", introScreen);
@@ -558,6 +545,7 @@ sole.log("Score saved successfully!");
         console.log("scoreboardTableContainer:", scoreboardTableContainer);
         console.log("submitNameButton:", submitNameButton);
         console.log("cancelNameButton:", cancelNameButton);
+
 
         if (startGameButton) {
             startGameButton.addEventListener("click", startGame);
