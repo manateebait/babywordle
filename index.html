@@ -536,7 +536,7 @@
     function renderScoreboard(querySnapshot) {
   if (!scoreboardTableContainer || !finalScoreboardModal) return;
 
-  let scoreboardHtml = "<h3>Scoreboard</h3><table><thead><tr><th>Name</th><th>Guesses</th><th>Time (s)</th><th>First Guess</th></tr></thead><tbody>";
+  let scoreboardHtml = "<h3>Scoreboard</h3><table><thead><tr><th>Name</th><th>Guesses</th><th>Time</th><th>First Guess</th></tr></thead><tbody>";
 
   querySnapshot.forEach(doc => {
     const data = doc.data();
