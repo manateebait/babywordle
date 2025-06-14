@@ -422,22 +422,30 @@
 }
 
 
-    function handleWin() {
-        console.log("handleWin triggered");
-       localStorage.setItem("babyWordleSolved", "true");
-        if (typeof WIN_MESSAGE !== 'undefined') {
+        function handleWin() {
+          console.log("handleWin triggered");
+        
+          const alreadyWon = localStorage.getItem("babyWordleSolved") === "true";
+        
+          if (!alreadyWon) {
+            localStorage.setItem("babyWordleSolved", "true");
+          }
+        
+          if (typeof WIN_MESSAGE !== 'undefined') {
             winMessageContainer.innerHTML = WIN_MESSAGE;
-        } else {
+          } else {
             winMessageContainer.innerHTML = "You Win!";
+          }
+        
+          winScreen.classList.remove("hidden");
+        
+          if (!alreadyWon) {
+            openNameModal(); // Only show modal if they haven't submitted before
+          } else {
+            console.log("Player has already submitted; skipping name modal.");
+          }
         }
-        winScreen.classList.remove("hidden");
-        if (localStorage.getItem("babyWordleSolved") === "true") {
-  console.log("Player has already submitted; skipping name modal.");
-} else {
-  openNameModal();
-}
 
-    }
 
     function openNameModal() {
   console.log("openNameModal called!");
