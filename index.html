@@ -9,8 +9,8 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <style>
     body { font-family: sans-serif; text-align: center; background: #121213; color: #fff; margin: 0; padding: 0 10px; }
-    /* REFINED: Base modal styles for robust Start Game button */
-    #intro-screen, .modal {
+    /* Base modal styles for robust Start Game button */
+    .modal {
         position: fixed;
         top: 0;
         left: 0;
@@ -61,7 +61,7 @@
       align-items: center;
     }
     .keyboard-button { flex: none; }
-    .hidden { display: none !important; } /* Kept as is */
+    .hidden { display: none !important; }
     #alert { position: absolute; top: 10%; left: 50%; transform: translateX(-50%); background: #333; padding: 12px 24px; border-radius: 4px; font-size: 1.2em; display: none; z-index: 20; }
     
     /* Name Modal Specific Styles (AS PROVIDED IN YOUR "WORKING" CODE) */
@@ -75,7 +75,6 @@
         width: 300px;
         position: relative;
         z-index: 11;
-        /* These properties were confirmed to work for mobile name entry. */
         max-height: 80vh; 
         overflow-y: auto;   
         overflow-x: hidden; 
@@ -86,7 +85,7 @@
     #name-modal input[type="text"] {
         padding: 10px;
         width: calc(100% - 20px);
-        box-sizing: border-box; /* Ensures padding is included in width */
+        box-sizing: border-box; 
         margin: 15px 0;
         border: 1px solid #555;
         border-radius: 4px;
@@ -95,7 +94,7 @@
         font-size: 1em;
     }
     #name-modal .modal-buttons {
-        margin-top: 15px; /* Keep a standard margin */
+        margin-top: 15px; 
         text-align: center;
     }
     #name-modal button {
@@ -114,6 +113,7 @@
         color: #eee;
         display: flex;
         flex-direction: column;
+        position: relative; /* Needed for absolute positioning of loading indicator */
     }
     /* Dedicated container for the scrollable table */
     #scoreboard-table-container {
@@ -123,6 +123,9 @@
         margin-bottom: 10px; /* Space between table and button */
         flex-grow: 1; /* Allow container to grow if needed */
         padding-right: 5px; /* Space for scrollbar on right, if present */
+        /* NEW: Styles for smooth fade-in */
+        opacity: 0; /* Start hidden */
+        transition: opacity 0.3s ease-in-out; /* Smooth transition */
     }
     #scoreboard table {
         width: 100%; /* Make table fill its container */
@@ -156,6 +159,31 @@
         padding-top: 15px;
         text-align: center;
         flex-shrink: 0;
+    }
+    /* NEW: Styles for loading indicator */
+    #scoreboard-loading-indicator {
+        font-size: 1.2em;
+        padding: 20px;
+        text-align: center;
+        color: #bbb;
+        opacity: 1; /* Start visible */
+        transition: opacity 0.3s ease-in-out; /* Smooth transition */
+        position: absolute; /* Position absolutely to overlay content */
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column; /* To center text vertically */
+        justify-content: center;
+        align-items: center;
+        background: rgba(18, 18, 19, 0.95); /* Cover content while loading */
+        z-index: 2; /* Ensure it's above the table container */
+        pointer-events: none; /* Allow clicks to pass through if it's just fading out */
+    }
+    /* Ensure loading indicator is hidden when its class is present */
+    #scoreboard-loading-indicator.hidden {
+        opacity: 0;
     }
 
 
@@ -219,8 +247,8 @@
 
   <div id="final-scoreboard-modal" class="modal hidden">
       <div class="modal-content">
-          <div id="scoreboard-table-container">
-              </div>
+          <h3>Scoreboard</h3> <div id="scoreboard-loading-indicator" class="hidden">Loading Scoreboard...</div>
+          <div id="scoreboard-table-container" class="hidden"> </div>
           <div class="modal-buttons">
               <button onclick="window.gameLogic.backToWinScreen()">Back to Win Screen</button>
           </div>
@@ -276,6 +304,8 @@
     const scoreboardTableContainer = document.getElementById("scoreboard-table-container"); 
     const submitNameButton = document.getElementById("submitNameButton");
     const cancelNameButton = document.getElementById("cancelNameButton");
+    // Reference to loading indicator
+    const scoreboardLoadingIndicator = document.getElementById("scoreboard-loading-indicator");
 
 
     function createBoard() {
@@ -517,16 +547,29 @@
     async function showScoreboard() {
       console.log("showScoreboard called!");
       try {
-          if (!scoreboardTableContainer || !finalScoreboardModal) {
+          if (!scoreboardTableContainer || !finalScoreboardModal || !scoreboardLoadingIndicator) { // Check loading indicator
               console.error("Error: Scoreboard elements not found in DOM.");
               showAlert("Error: Scoreboard display area not found.");
               return;
           }
 
+          // 1. Prepare and show the modal with loading state
+          finalScoreboardModal.classList.remove('hidden'); // Make the overall modal visible
+          winScreen.classList.add("hidden"); // Hide other modals
+          loseScreen.classList.add("hidden");
+          nameModal.classList.add("hidden");
+
+          scoreboardTableContainer.innerHTML = ''; // Clear previous table content
+          scoreboardTableContainer.classList.add('hidden'); // Ensure table content is hidden before loading
+          scoreboardLoadingIndicator.classList.remove('hidden'); // Show loading indicator
+
+
+          // 2. Fetch data (this is where the delay is)
           const q = query(collection(db, "scoreboard"), orderBy("guesses", "asc"), orderBy("time", "asc"));
           const querySnapshot = await getDocs(q);
 
-          let scoreboardHtml = "<h3>Scoreboard</h3><table><thead><tr><th>Name</th><th>Guesses</th><th>Time</th><th>First Guess</th></tr></thead><tbody>"; // Removed (s)
+          // 3. Build scoreboard HTML
+          let scoreboardHtml = "<h3>Scoreboard</h3><table><thead><tr><th>Name</th><th>Guesses</th><th>Time</th><th>First Guess</th></tr></thead><tbody>";
           let rowCount = 0;
           querySnapshot.forEach(doc => {
             if (rowCount < 10) { // Limit to 10 rows
@@ -536,18 +579,18 @@
             }
           });
           scoreboardHtml += "</tbody></table>";
-          scoreboardTableContainer.innerHTML = scoreboardHtml;
+          
+          // 4. Update DOM and transition
+          scoreboardTableContainer.innerHTML = scoreboardHtml; // Populate table
+          scoreboardLoadingIndicator.classList.add('hidden'); // Hide loading indicator (fades out)
+          scoreboardTableContainer.classList.remove('hidden'); // Show table (fades in)
 
-          // Hide other modals when scoreboard is shown
-          winScreen.classList.add("hidden");
-          loseScreen.classList.add("hidden");
-          nameModal.classList.add("hidden");
-
-          finalScoreboardModal.classList.remove("hidden");
           console.log("Scoreboard displayed successfully.");
       } catch (error) {
           console.error("Error fetching scoreboard:", error);
           showAlert("Error loading scoreboard. Check console for details.");
+          scoreboardLoadingIndicator.classList.add('hidden'); // Hide loading indicator on error too
+          finalScoreboardModal.classList.add('hidden'); // Hide modal on error
       }
     }
 
@@ -610,6 +653,8 @@
         console.log("scoreboardTableContainer:", scoreboardTableContainer);
         console.log("submitNameButton:", submitNameButton);
         console.log("cancelNameButton:", cancelNameButton);
+        console.log("scoreboardLoadingIndicator:", scoreboardLoadingIndicator);
+
 
         // !! TEMPORARILY DISABLED FOR TESTING !!
         // if (localStorage.getItem(LAST_WIN_KEY)) {
