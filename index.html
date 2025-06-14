@@ -237,6 +237,7 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
+    let scoreboardCache = null;
     let startTime = Date.now();
     let totalWrongGuesses = 0;
     let firstGuessWord = null;
@@ -507,42 +508,47 @@
         return `${formattedMinutes}:${formattedSeconds}`;
     }
 
-    // showScoreboard function to be called by button
     async function showScoreboard() {
       console.log("showScoreboard called!");
+    
+      if (scoreboardCache) {
+        console.log("Using cached scoreboard.");
+        renderScoreboard(scoreboardCache);
+        return;
+      }
+    
       try {
-          if (!scoreboardTableContainer || !finalScoreboardModal) {
-              console.error("Error: Scoreboard elements not found in DOM.");
-              showAlert("Error: Scoreboard display area not found.");
-              return;
-          }
-
-          const q = query(collection(db, "scoreboard"), orderBy("guesses", "asc"), orderBy("time", "asc"));
-          const querySnapshot = await getDocs(q);
-
-          let scoreboardHtml = "<h3>Scoreboard</h3><table><thead><tr><th>Name</th><th>Guesses</th><th>Time (s)</th><th>First Guess</th></tr></thead><tbody>";
-          querySnapshot.forEach(doc => {
-                const data = doc.data();
-                // Use formatTime for the time column
-                scoreboardHtml += `<tr><td>${data.name}</td><td>${data.guesses}</td><td>${formatTime(data.time)}</td><td>${data.firstGuess || 'N/A'}</td></tr>`;
-          });
-
-          scoreboardHtml += "</tbody></table>";
-          scoreboardTableContainer.innerHTML = scoreboardHtml; // Put content into the specific container
-
-          // Hide other modals when scoreboard is shown
-          winScreen.classList.add("hidden");
-          loseScreen.classList.add("hidden");
-          nameModal.classList.add("hidden");
-
-          finalScoreboardModal.classList.remove("hidden"); // Show the scoreboard modal
-          console.log("Scoreboard displayed successfully.");
+        const q = query(collection(db, "scoreboard"), orderBy("guesses", "asc"), orderBy("time", "asc"));
+        const querySnapshot = await getDocs(q);
+    
+        scoreboardCache = querySnapshot; // ✅ Store in cache
+        renderScoreboard(querySnapshot);
       } catch (error) {
-          console.error("Error fetching scoreboard:", error);
-          showAlert("Error loading scoreboard. Check console for details.");
+        console.error("Error fetching scoreboard:", error);
+        showAlert("Error loading scoreboard. Check console for details.");
       }
     }
 
+    function renderScoreboard(querySnapshot) {
+  if (!scoreboardTableContainer || !finalScoreboardModal) return;
+
+  let scoreboardHtml = "<h3>Scoreboard</h3><table><thead><tr><th>Name</th><th>Guesses</th><th>Time (s)</th><th>First Guess</th></tr></thead><tbody>";
+
+  querySnapshot.forEach(doc => {
+    const data = doc.data();
+    scoreboardHtml += `<tr><td>${data.name}</td><td>${data.guesses}</td><td>${formatTime(data.time)}</td><td>${data.firstGuess || 'N/A'}</td></tr>`;
+  });
+
+  scoreboardHtml += "</tbody></table>";
+  scoreboardTableContainer.innerHTML = scoreboardHtml;
+
+  winScreen.classList.add("hidden");
+  loseScreen.classList.add("hidden");
+  nameModal.classList.add("hidden");
+  finalScoreboardModal.classList.remove("hidden");
+}
+
+    
     async function submitScore() {
         console.log("Submit button clicked!");
         const name = playerNameInput.value.trim();
@@ -560,6 +566,7 @@
 
         try {
             await saveResult(name, guesses, time, firstGuessWord);
+            scoreboardCache = null; // Invalidate cache so next scoreboard load is fresh
             console.log("Score submission successful, closing modal.");
         } catch (error) {
             console.error("Error during score submission:", error);
