@@ -237,6 +237,7 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
+    let firestoreReadsThisSession = 0;
     let scoreboardCache = null;
     let startTime = Date.now();
     let totalWrongGuesses = 0;
@@ -520,6 +521,9 @@
       try {
         const q = query(collection(db, "scoreboard"), orderBy("guesses", "asc"), orderBy("time", "asc"));
         const querySnapshot = await getDocs(q);
+
+        firestoreReadsThisSession += querySnapshot.size;
+    console.log("🔍 Firestore reads this session:", firestoreReadsThisSession);
     
         scoreboardCache = querySnapshot; // ✅ Store in cache
         renderScoreboard(querySnapshot);
