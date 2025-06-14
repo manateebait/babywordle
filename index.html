@@ -401,11 +401,43 @@
       currentGuess = "";
     }
 
-    function restartGame() {
-      finalScoreboardModal.classList.add("hidden");
-      window.location.reload();
-    }
+      function restartGame() {
+      resetGame(); // Call the new reset function
+    }
 
+    // Add this new function
+    function resetGame() {
+        // Clear the game board tiles
+        const tiles = document.querySelectorAll(".tile");
+        tiles.forEach(tile => {
+            tile.textContent = "";
+            tile.classList.remove("correct", "present", "absent", "shake", "flip");
+        });
+
+        // Reset keyboard button colors
+        const keyboardButtons = document.querySelectorAll("#keyboard button");
+        keyboardButtons.forEach(button => {
+            button.classList.remove("correct", "present", "absent");
+        });
+
+        // Reset game variables
+        startTime = Date.now();
+        totalWrongGuesses = 0;
+        firstGuessWord = null;
+        currentRow = 0;
+        currentGuess = "";
+
+        // Hide all modals/screens except the main game area
+        winScreen.classList.add("hidden");
+        loseScreen.classList.add("hidden");
+        nameModal.classList.add("hidden");
+        finalScoreboardModal.classList.add("hidden");
+        introScreen.classList.add("hidden"); // Ensure intro is hidden after a restart
+
+        // Reset the player name input in case it was pre-filled
+        playerNameInput.value = '';
+    }
+    
     function handleWin() {
         console.log("handleWin triggered");
         if (typeof WIN_MESSAGE !== 'undefined') {
@@ -591,6 +623,7 @@
         showScoreboard: showScoreboard,
         handleKey: handleKey,
         backToWinScreen: backToWinScreen
+        resetGame: resetGame
     };
   </script>
 </body>
