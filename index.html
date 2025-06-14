@@ -522,14 +522,10 @@
         const time = Math.floor((Date.now() - startTime) / 1000);
 
         try {
-            await addDoc(collection(db, "scoreboard"), {
-              name,
-              guesses,
-              time,
-              firstGuess,
-              timestamp: Date.now()
-            });
-            console.log("Score saved successfully!");
+await addDoc(collection(db, "scoreboard"), {
+  name, guesses, time, firstGuessWord, timestamp: Date.now() //
+});
+sole.log("Score saved successfully!");
         } catch (error) {
             console.error("Error during score submission:", error);
             showAlert("Failed to save score. Please try again. (See console for details)");
