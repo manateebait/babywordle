@@ -25,12 +25,10 @@
         padding: 20px;
         box-sizing: border-box;
     }
-    /* Ensure .modal elements are hidden by default via CSS class, not inline style, for reliability */
-    .modal.hidden {
-        display: none !important;
-    }
+    /* This rule for .hidden is critical for hiding elements */
+    .hidden { display: none !important; } 
 
-    /* Keep the general .modal styling for when it is shown */
+    /* The general .modal styling for when it IS shown */
     .modal {
         position: fixed;
         top: 0;
@@ -47,83 +45,6 @@
         padding: 20px;
         box-sizing: border-box;
     }
-
-
-    .green-box { display: inline-block; background-color: #538d4e; color: #fff; padding: 10px 12px; font-weight: bold; font-size: 1.2em; border-radius: 4px; }
-    h1 { margin-top: 30px; margin-bottom: 10px; font-size: 1.8em; }
-    #game-board { display: grid; grid-template-columns: repeat(6, 60px); gap: 6px; justify-content: center; margin: 30px auto; max-width: 600px; }
-    .tile { width: 60px; height: 60px; border: 2px solid #3a3a3c; display: flex; justify-content: center; align-items: center; font-size: 2em; font-weight: bold; text-transform: uppercase; background-color: #121213; color: #fff; transition: background-color 0.5s ease, transform 0.3s ease; }
-    .tile.shake { animation: shake 0.5s ease; }
-    .tile.flip { animation: flip 0.5s ease forwards; }
-    @keyframes flip { 0% { transform: rotateX(0); } 50% { transform: rotateX(90deg); } 100% { transform: rotateX(0); } }
-    @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
-    .correct { background-color: #538d4e !important; border-color: #538d4e !important; }
-    .present { background-color: #b59f3b !important; border-color: #b59f3b !important; }
-    .absent { background-color: #3a3a3c !important; border-color: #3a3a3c !important; }
-    #keyboard { display: flex; flex-direction: column; align-items: center; gap: 8px; width: auto; max-width: 600px; margin: 20px auto; padding: 0 8px; box-sizing: border-box; }
-    button {
-      font-size: 1em;
-      font-weight: bold;
-      padding: 10px;
-      margin: 2px;
-      height: auto;
-      min-width: 36px;
-      border-radius: 4px;
-      border: none;
-      cursor: pointer;
-      background-color: #818384;
-      color: #fff;
-      text-transform: uppercase;
-      display: inline-flex;
-      justify-content: center;
-      align-items: center;
-    }
-    .keyboard-button { flex: none; }
-    /* This rule for .hidden is critical */
-    .hidden { display: none !important; } 
-    #alert { position: absolute; top: 10%; left: 50%; transform: translateX(-50%); background: #333; padding: 12px 24px; border-radius: 4px; font-size: 1.2em; display: none; z-index: 20; }
-    
-    /* Name Modal Specific Styles (Reverted to a more stable state) */
-    #name-modal .modal-content {
-        background:#1e1e1f;
-        padding: 20px;
-        border-radius: 8px;
-        text-align: center;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-        max-width: 90%;
-        width: 300px;
-        position: relative;
-        z-index: 11;
-    }
-    #name-modal input[type="text"] {
-        padding: 10px;
-        width: calc(100% - 20px);
-        margin: 15px 0;
-        border: 1px solid #555;
-        border-radius: 4 lunatic-margin: 0 10px; }
-    #intro-screen, .modal {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(18, 18, 19, 0.95);
-        color: #fff;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        z-index: 10;
-        padding: 20px;
-        box-sizing: border-box;
-    }
-    /* Make sure all modals are hidden by default via CSS */
-    #name-modal, #win-screen, #lose-screen, #final-scoreboard-modal {
-        display: none;
-    }
-    /* This rule will ensure elements with .hidden class are properly hidden */
-    .hidden { display: none !important; }
-
 
     .green-box { display: inline-block; background-color: #538d4e; color: #fff; padding: 10px 12px; font-weight: bold; font-size: 1.2em; border-radius: 4px; }
     h1 { margin-top: 30px; margin-bottom: 10px; font-size: 1.8em; }
@@ -275,10 +196,7 @@
     <span class="green-box">Y</span>
     &nbsp;WORDLE
   </h1>
-  <div id="game-board"></div>
-  <div id="keyboard"></div>
-
-  <div id="win-screen" class="modal hidden">
+  <div id="game-board" class="hidden"></div>   <div id="keyboard" class="hidden"></div>     <div id="win-screen" class="modal hidden">
     <div id="win-message-container"></div>
     <button onclick="window.gameLogic.showScoreboard()">See Scoreboard</button>
   </div>
@@ -328,7 +246,7 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // --- GLOBAL VARIABLES (Accumulate across rounds in the same session) ---
+    // --- GLOBAL VARIABLES (Accumulate across rounds in the same session) ---
     let totalWrongGuesses = 0; // Cumulative wrong guesses across all rounds in this session
     let totalPlayTime = 0;     // Cumulative total time across all rounds in this session (in seconds)
 
@@ -506,8 +424,8 @@
         const keyboardButtons = keyboard.querySelectorAll('button');
         keyboardButtons.forEach(button => {
             button.classList.remove('correct', 'present', 'absent');
-            // If you've manually set background colors via JS for key states, reset them here:
-            // button.style.backgroundColor = '';
+            // Ensure default background color is restored if it was overridden
+            // button.style.backgroundColor = ''; 
         });
 
         // Reset current game-specific state variables for a new round
@@ -523,6 +441,11 @@
     // It sets up a brand new game *session*, resetting cumulative totals.
     function startGame() {
       introScreen.classList.add("hidden"); // Hide the intro screen permanently
+      
+      // Show the game board and keyboard now that the game is starting
+      board.classList.remove("hidden"); // NEW
+      keyboard.classList.remove("hidden"); // NEW
+
       totalWrongGuesses = 0; // Reset cumulative wrong guesses for a new *session*
       totalPlayTime = 0;   // Reset cumulative total time for a new *session*
       softResetGame(); // Prepare the board for the new game round
@@ -721,9 +644,9 @@
             .then(data => {
                 allowedWords = data.allowedWords.map(w => w.toLowerCase());
                 createKeyboard(); // Create keyboard once when the page loads
-                createBoard(); // Create initial board
+                createBoard(); // Create initial board (it will be hidden by default in HTML)
                 
-                // Ensure correct initial visibility for modals
+                // Ensure correct initial visibility for all modals
                 introScreen.classList.remove("hidden"); // Show intro screen initially
                 winScreen.classList.add("hidden");
                 loseScreen.classList.add("hidden");
