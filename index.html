@@ -25,6 +25,30 @@
         padding: 20px;
         box-sizing: border-box;
     }
+    /* Ensure .modal elements are hidden by default via CSS class, not inline style, for reliability */
+    .modal.hidden {
+        display: none !important;
+    }
+
+    /* Keep the general .modal styling for when it is shown */
+    .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(18, 18, 19, 0.95);
+        color: #fff;
+        display: flex; /* Default display when not hidden */
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 10;
+        padding: 20px;
+        box-sizing: border-box;
+    }
+
+
     .green-box { display: inline-block; background-color: #538d4e; color: #fff; padding: 10px 12px; font-weight: bold; font-size: 1.2em; border-radius: 4px; }
     h1 { margin-top: 30px; margin-bottom: 10px; font-size: 1.8em; }
     #game-board { display: grid; grid-template-columns: repeat(6, 60px); gap: 6px; justify-content: center; margin: 30px auto; max-width: 600px; }
@@ -55,10 +79,85 @@
       align-items: center;
     }
     .keyboard-button { flex: none; }
-    .hidden { display: none !important; }
+    /* This rule for .hidden is critical */
+    .hidden { display: none !important; } 
     #alert { position: absolute; top: 10%; left: 50%; transform: translateX(-50%); background: #333; padding: 12px 24px; border-radius: 4px; font-size: 1.2em; display: none; z-index: 20; }
     
     /* Name Modal Specific Styles (Reverted to a more stable state) */
+    #name-modal .modal-content {
+        background:#1e1e1f;
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        max-width: 90%;
+        width: 300px;
+        position: relative;
+        z-index: 11;
+    }
+    #name-modal input[type="text"] {
+        padding: 10px;
+        width: calc(100% - 20px);
+        margin: 15px 0;
+        border: 1px solid #555;
+        border-radius: 4 lunatic-margin: 0 10px; }
+    #intro-screen, .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(18, 18, 19, 0.95);
+        color: #fff;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 10;
+        padding: 20px;
+        box-sizing: border-box;
+    }
+    /* Make sure all modals are hidden by default via CSS */
+    #name-modal, #win-screen, #lose-screen, #final-scoreboard-modal {
+        display: none;
+    }
+    /* This rule will ensure elements with .hidden class are properly hidden */
+    .hidden { display: none !important; }
+
+
+    .green-box { display: inline-block; background-color: #538d4e; color: #fff; padding: 10px 12px; font-weight: bold; font-size: 1.2em; border-radius: 4px; }
+    h1 { margin-top: 30px; margin-bottom: 10px; font-size: 1.8em; }
+    #game-board { display: grid; grid-template-columns: repeat(6, 60px); gap: 6px; justify-content: center; margin: 30px auto; max-width: 600px; }
+    .tile { width: 60px; height: 60px; border: 2px solid #3a3a3c; display: flex; justify-content: center; align-items: center; font-size: 2em; font-weight: bold; text-transform: uppercase; background-color: #121213; color: #fff; transition: background-color 0.5s ease, transform 0.3s ease; }
+    .tile.shake { animation: shake 0.5s ease; }
+    .tile.flip { animation: flip 0.5s ease forwards; }
+    @keyframes flip { 0% { transform: rotateX(0); } 50% { transform: rotateX(90deg); } 100% { transform: rotateX(0); } }
+    @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+    .correct { background-color: #538d4e !important; border-color: #538d4e !important; }
+    .present { background-color: #b59f3b !important; border-color: #b59f3b !important; }
+    .absent { background-color: #3a3a3c !important; border-color: #3a3a3c !important; }
+    #keyboard { display: flex; flex-direction: column; align-items: center; gap: 8px; width: auto; max-width: 600px; margin: 20px auto; padding: 0 8px; box-sizing: border-box; }
+    button {
+      font-size: 1em;
+      font-weight: bold;
+      padding: 10px;
+      margin: 2px;
+      height: auto;
+      min-width: 36px;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      background-color: #818384;
+      color: #fff;
+      text-transform: uppercase;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .keyboard-button { flex: none; }
+    #alert { position: absolute; top: 10%; left: 50%; transform: translateX(-50%); background: #333; padding: 12px 24px; border-radius: 4px; font-size: 1.2em; display: none; z-index: 20; }
+    
+    /* Name Modal Specific Styles */
     #name-modal .modal-content {
         background:#1e1e1f;
         padding: 20px;
@@ -229,7 +328,7 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // --- GLOBAL VARIABLES (Accumulate across rounds in the same session) ---
+    // --- GLOBAL VARIABLES (Accumulate across rounds in the same session) ---
     let totalWrongGuesses = 0; // Cumulative wrong guesses across all rounds in this session
     let totalPlayTime = 0;     // Cumulative total time across all rounds in this session (in seconds)
 
@@ -357,17 +456,19 @@
       }
 
       setTimeout(() => {
-            // Calculate time taken for this specific guess/row
+            // Calculate time taken for this specific guess/row BEFORE advancing to next row or handling win/loss
             const currentGuessDuration = Math.floor((Date.now() - currentRoundStartTime) / 1000);
-            totalPlayTime += currentGuessDuration; // Add to cumulative total play time
-            currentRoundStartTime = Date.now(); // Reset start time for the next guess/row
 
         if (currentGuess === targetWord) {
+                totalPlayTime += currentGuessDuration; // Add this round's time to cumulative total for winning guess
           handleWin();
           return;
         }
 
         totalWrongGuesses++; // Increment cumulative wrong guesses
+        totalPlayTime += currentGuessDuration; // Add this round's time to cumulative for wrong guess
+        currentRoundStartTime = Date.now(); // Reset start time for the *next* guess within the same round
+
         currentRow++;
         if (currentRow >= maxGuesses) {
           loseScreen.classList.remove("hidden");
@@ -405,8 +506,8 @@
         const keyboardButtons = keyboard.querySelectorAll('button');
         keyboardButtons.forEach(button => {
             button.classList.remove('correct', 'present', 'absent');
-            // Ensure default background color is restored if it was overridden
-            // button.style.backgroundColor = ''; 
+            // If you've manually set background colors via JS for key states, reset them here:
+            // button.style.backgroundColor = '';
         });
 
         // Reset current game-specific state variables for a new round
@@ -543,10 +644,8 @@
       }
     }
 
-    ---
-    ## Updated `submitScore` Function
-    This function now uses the cumulative `totalWrongGuesses` and `totalPlayTime` and tracks the first name entered.
-    ```javascript
+    // --- Updated `submitScore` Function ---
+    // This function now uses the cumulative `totalWrongGuesses` and `totalPlayTime` and tracks the first name entered.
     async function submitScore() {
         console.log("Submit button clicked!");
         const name = playerNameInput.value.trim();
@@ -571,7 +670,7 @@
               name,
               guesses,
               time,
-              firstGuess, // This is the first guess of the *current game round*
+              firstGuess: firstGuessWord, // This is the first guess of the *current game round*
               timestamp: Date.now()
             });
             console.log("Score saved successfully!");
@@ -585,8 +684,6 @@
         }
         closeNameModal(); // Close the name modal after successful submission
     }
-    ```
-    ---
 
     // Function to go back from scoreboard to win screen
     function backToWinScreen() {
@@ -624,15 +721,16 @@
             .then(data => {
                 allowedWords = data.allowedWords.map(w => w.toLowerCase());
                 createKeyboard(); // Create keyboard once when the page loads
-                createBoard(); // Create initial board (will be cleared by softResetGame when game starts)
-
-                document.addEventListener("keydown", e => handleKey(e.key));
-
+                createBoard(); // Create initial board
+                
+                // Ensure correct initial visibility for modals
                 introScreen.classList.remove("hidden"); // Show intro screen initially
                 winScreen.classList.add("hidden");
                 loseScreen.classList.add("hidden");
                 nameModal.classList.add("hidden");
                 finalScoreboardModal.classList.add("hidden");
+
+                document.addEventListener("keydown", e => handleKey(e.key));
             })
             .catch(error => console.error("Error loading words.json:", error));
     });
