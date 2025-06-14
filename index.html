@@ -8,8 +8,10 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <style>
+    /* --- INLINE STYLES (for basic layout of modal/intro containers) --- */
     body { font-family: sans-serif; text-align: center; background: #121213; color: #fff; margin: 0; padding: 0 10px; }
-    /* REFINED: Base modal styles for robust Start Game button */
+    
+    /* Base modal/intro screen container styles */
     #intro-screen, .modal {
         position: fixed;
         top: 0;
@@ -18,7 +20,7 @@
         height: 100%;
         background: rgba(18, 18, 19, 0.95);
         color: #fff;
-        display: flex; /* Maintain original display:flex for consistency across working versions */
+        display: flex; /* Display as flex by default for centering content */
         flex-direction: column;
         justify-content: center;
         align-items: center;
@@ -26,144 +28,14 @@
         padding: 20px;
         box-sizing: border-box;
     }
-    /* Ensure intro screen explicitly has a higher z-index to be on top */
+    /* Ensure intro screen is explicitly on top */
     #intro-screen {
         z-index: 20; 
     }
 
-    .green-box { display: inline-block; background-color: #538d4e; color: #fff; padding: 10px 12px; font-weight: bold; font-size: 1.2em; border-radius: 4px; }
-    h1 { margin-top: 30px; margin-bottom: 10px; font-size: 1.8em; }
-    #game-board { display: grid; grid-template-columns: repeat(6, 60px); gap: 6px; justify-content: center; margin: 30px auto; max-width: 600px; }
-    .tile { width: 60px; height: 60px; border: 2px solid #3a3a3c; display: flex; justify-content: center; align-items: center; font-size: 2em; font-weight: bold; text-transform: uppercase; background-color: #121213; color: #fff; transition: background-color 0.5s ease, transform 0.3s ease; }
-    .tile.shake { animation: shake 0.5s ease; }
-    .tile.flip { animation: flip 0.5s ease forwards; }
-    @keyframes flip { 0% { transform: rotateX(0); } 50% { transform: rotateX(90deg); } 100% { transform: rotateX(0); } }
-    @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
-    .correct { background-color: #538d4e !important; border-color: #538d4e !important; }
-    .present { background-color: #b59f3b !important; border-color: #b59f3b !important; }
-    .absent { background-color: #3a3a3c !important; border-color: #3a3a3c !important; }
-    #keyboard { display: flex; flex-direction: column; align-items: center; gap: 8px; width: auto; max-width: 600px; margin: 20px auto; padding: 0 8px; box-sizing: border-box; }
-    button {
-      font-size: 1em;
-      font-weight: bold;
-      padding: 10px;
-      margin: 2px;
-      height: auto;
-      min-width: 36px;
-      border-radius: 4px;
-      border: none;
-      cursor: pointer;
-      background-color: #818384;
-      color: #fff;
-      text-transform: uppercase;
-      display: inline-flex;
-      justify-content: center;
-      align-items: center;
-    }
-    .keyboard-button { flex: none; }
+    /* Utility classes */
     .hidden { display: none !important; }
     #alert { position: absolute; top: 10%; left: 50%; transform: translateX(-50%); background: #333; padding: 12px 24px; border-radius: 4px; font-size: 1.2em; display: none; z-index: 20; }
-    
-    /* Name Modal Specific Styles */
-    #name-modal .modal-content {
-        background:#1e1e1f;
-        padding: 20px;
-        border-radius: 8px;
-        text-align: center;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-        max-width: 90%;
-        width: 300px;
-        position: relative;
-        z-index: 11;
-        max-height: 80vh; 
-        overflow-y: auto;   
-        overflow-x: hidden; 
-        display: flex; 
-        flex-direction: column; 
-        justify-content: space-between; 
-    }
-    #name-modal input[type="text"] {
-        padding: 10px;
-        width: calc(100% - 20px);
-        margin: 15px 0;
-        border: 1px solid #555;
-        border-radius: 4px;
-        background-color: #333;
-        color: #fff;
-        font-size: 1em;
-    }
-    #name-modal .modal-buttons {
-        margin-top: 15px; 
-        text-align: center;
-    }
-    #name-modal button {
-        margin: 5px;
-        padding: 10px 20px;
-    }
-    
-    /* Scoreboard Specific Styles */
-    #final-scoreboard-modal .modal-content {
-        background: #1e1e1f;
-        padding: 15px;
-        border-radius: 8px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-        max-width: 80%; /* Scoreboard content fills 80% of the modal */
-        width: 500px; /* Max width for desktop */
-        color: #eee;
-        display: flex; 
-        flex-direction: column;
-    }
-    /* Dedicated container for the scrollable table */
-    #scoreboard-table-container {
-        max-height: 250px; 
-        overflow-y: auto;
-        overflow-x: hidden; 
-        margin-bottom: 10px; 
-        flex-grow: 1; 
-    }
-    #scoreboard table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 10px;
-        font-size: 0.9em;
-        table-layout: fixed; 
-    }
-    /* Column widths for better spacing */
-    #scoreboard th:nth-child(1), #scoreboard td:nth-child(1) { width: 30%; } /* Name */
-    #scoreboard th:nth-child(2), #scoreboard td:nth-child(2) { width: 15%; } /* Guesses */
-    #scoreboard th:nth-child(3), #scoreboard td:nth-child(3) { width: 20%; } /* Time */
-    #scoreboard th:nth-child(4), #scoreboard td:nth-child(4) { width: 35%; } /* First Guess */
-
-    #scoreboard th,
-    #scoreboard td {
-        padding: 8px 12px;
-        border: 1px solid #444;
-        text-align: center;
-    }
-    #scoreboard th {
-        background-color: #333;
-    }
-    #final-scoreboard-modal .modal-content h3 {
-        margin-top: 0;
-        margin-bottom: 10px;
-    }
-    #final-scoreboard-modal .modal-buttons {
-        margin-top: auto;
-        padding-top: 15px;
-        text-align: center;
-        flex-shrink: 0;
-    }
-
-
-    @media (max-width: 600px) {
-      .tile { width: 50px; height: 50px; }
-      #game-board { grid-template-columns: repeat(6, 50px); gap: 6px; justify-content: center; max-width: 360px; margin: 0 auto; }
-      #keyboard { max-width: 100%; padding: 0 4px; }
-      .keyboard-row { width: 100%; display: flex; justify-content: center; gap: 3px; flex-wrap: nowrap; }
-      .keyboard-row button { font-size: 20px; padding: 12px 0; min-width: auto; height: 48px; flex: 1; }
-      #key-Enter { font-size: 12px; flex: 1.2; }
-      #key-Backspace { font-size: 20px; flex: 1.2; }
-    }
   </style>
 </head>
 <body>
@@ -215,7 +87,9 @@
 
   <div id="final-scoreboard-modal" class="modal hidden">
       <div class="modal-content">
-          <div id="scoreboard-table-container">
+          <h3>Scoreboard</h3>
+          <div id="scoreboard-loading-indicator" class="hidden">Loading Scoreboard...</div>
+          <div id="scoreboard-table-container" class="hidden">
               </div>
           <div class="modal-buttons">
               <button onclick="window.gameLogic.backToWinScreen()">Back to Win Screen</button>
@@ -249,8 +123,14 @@
     let currentRow = 0;
     let currentGuess = "";
     let allowedWords = [];
-    const encodedTarget = [69, 77, 77, 69, 84, 84];
+    const encodedTarget = [69, 77, 77, 69, 84, 84]; 
     const targetWord = String.fromCharCode(...encodedTarget).toLowerCase();
+
+    // Key for local storage to prevent re-submissions for the same word
+    // !! TEMPORARILY DISABLED FOR TESTING - RE-ADD FOR PRODUCTION !!
+    // const LAST_WIN_KEY = 'babyWordleWon_' + targetWord; 
+    const LAST_WIN_KEY = 'DISABLED_FOR_TESTING'; // Placeholder to avoid error
+
 
     const board = document.getElementById("game-board");
     const keyboard = document.getElementById("keyboard");
@@ -266,6 +146,7 @@
     const scoreboardTableContainer = document.getElementById("scoreboard-table-container"); 
     const submitNameButton = document.getElementById("submitNameButton");
     const cancelNameButton = document.getElementById("cancelNameButton");
+    const scoreboardLoadingIndicator = document.getElementById("scoreboard-loading-indicator");
 
 
     function createBoard() {
@@ -298,7 +179,29 @@
       });
     }
 
+    // Function to disable/enable keyboard input
+    function setKeyboardEnabled(enabled) {
+        const keyboardButtons = document.querySelectorAll('#keyboard button');
+        keyboardButtons.forEach(button => {
+            button.disabled = !enabled;
+        });
+        document.removeEventListener("keydown", handleKey); // Remove to disable
+        if (enabled) {
+            document.addEventListener("keydown", handleKey); // Add to enable
+        }
+    }
+
     function handleKey(key) {
+      // If keyboard is explicitly disabled, do nothing
+      if (document.activeElement && document.activeElement.tagName === 'INPUT') {
+          // Allow input into the name field
+          return;
+      }
+      // Check if any keyboard button is disabled, if so, the keyboard is generally disabled
+      if (document.querySelector('#keyboard button:disabled')) {
+          return;
+      }
+
       if (key === "Backspace") {
         currentGuess = currentGuess.slice(0, -1);
       } else if (key === "Enter") {
@@ -333,6 +236,12 @@
     }
 
     async function submitGuess() {
+      // !! TEMPORARILY DISABLED FOR TESTING !!
+      // if (localStorage.getItem(LAST_WIN_KEY)) {
+      //     showAlert("You've already won this word!");
+      //     return;
+      // }
+      
       if (currentGuess.length !== wordLength) return;
       if (!allowedWords.includes(currentGuess)) {
         shakeRow();
@@ -401,14 +310,21 @@
       firstGuessWord = null;
       currentRow = 0;
       currentGuess = "";
+      setKeyboardEnabled(true); // Ensure keyboard is enabled when game starts
     }
 
     function restartGame() {
+      // !! TEMPORARILY REMOVED FOR TESTING !!
+      // localStorage.removeItem(LAST_WIN_KEY); 
       window.location.reload();
     }
 
     function handleWin() {
         console.log("handleWin triggered");
+        // !! TEMPORARILY REMOVED FOR TESTING !!
+        // localStorage.setItem(LAST_WIN_KEY, 'true'); 
+        setKeyboardEnabled(false); // Disable game keyboard after winning
+
         if (typeof WIN_MESSAGE !== 'undefined') {
             winMessageContainer.innerHTML = WIN_MESSAGE;
         } else {
@@ -472,16 +388,30 @@
     async function showScoreboard() {
       console.log("showScoreboard called!");
       try {
-          if (!scoreboardTableContainer || !finalScoreboardModal) {
+          // Check all necessary DOM elements including loading indicator
+          if (!scoreboardTableContainer || !finalScoreboardModal || !scoreboardLoadingIndicator) { 
               console.error("Error: Scoreboard elements not found in DOM.");
-              showAlert("Error: Scoreboard display area not found.");
+              showAlert("Error: Scoreboard display area not found. Please check console.");
               return;
           }
 
+          // 1. Prepare and show the modal with loading state
+          finalScoreboardModal.classList.remove('hidden'); // Make the overall modal visible
+          winScreen.classList.add("hidden"); // Hide other game-related modals
+          loseScreen.classList.add("hidden");
+          nameModal.classList.add("hidden");
+
+          scoreboardTableContainer.innerHTML = ''; // Clear previous table content
+          scoreboardTableContainer.classList.add('hidden'); // Ensure table content is hidden for fade-in
+          scoreboardLoadingIndicator.classList.remove('hidden'); // Show loading indicator
+
+
+          // 2. Fetch data (this is where the delay is)
           const q = query(collection(db, "scoreboard"), orderBy("guesses", "asc"), orderBy("time", "asc"));
           const querySnapshot = await getDocs(q);
 
-          let scoreboardHtml = "<h3>Scoreboard</h3><table><thead><tr><th>Name</th><th>Guesses</th><th>Time</th><th>First Guess</th></tr></thead><tbody>"; // Removed (s)
+          // 3. Build scoreboard HTML (NO <h3> here, it's static in HTML now)
+          let scoreboardHtml = "<table><thead><tr><th>Name</th><th>Guesses</th><th>Time</th><th>First Guess</th></tr></thead><tbody>"; 
           let rowCount = 0;
           querySnapshot.forEach(doc => {
             if (rowCount < 10) { // Limit to 10 rows
@@ -491,18 +421,20 @@
             }
           });
           scoreboardHtml += "</tbody></table>";
-          scoreboardTableContainer.innerHTML = scoreboardHtml;
+          
+          // 4. Update DOM and transition
+          scoreboardTableContainer.innerHTML = scoreboardHtml; // Populate table
+          
+          // Hide loading indicator and show scoreboard content smoothly
+          scoreboardLoadingIndicator.classList.add('hidden'); // Hide loading indicator (fades out)
+          scoreboardTableContainer.classList.remove('hidden'); // Show table (fades in)
 
-          // Hide other modals when scoreboard is shown
-          winScreen.classList.add("hidden");
-          loseScreen.classList.add("hidden");
-          nameModal.classList.add("hidden");
-
-          finalScoreboardModal.classList.remove("hidden");
           console.log("Scoreboard displayed successfully.");
       } catch (error) {
           console.error("Error fetching scoreboard:", error);
           showAlert("Error loading scoreboard. Check console for details.");
+          scoreboardLoadingIndicator.classList.add('hidden'); // Hide loading indicator on error too
+          finalScoreboardModal.classList.add('hidden'); // Hide modal on error if data load fails
       }
     }
 
@@ -557,6 +489,8 @@
         console.log("scoreboardTableContainer:", scoreboardTableContainer);
         console.log("submitNameButton:", submitNameButton);
         console.log("cancelNameButton:", cancelNameButton);
+        console.log("scoreboardLoadingIndicator:", scoreboardLoadingIndicator);
+
 
         if (startGameButton) {
             startGameButton.addEventListener("click", startGame);
