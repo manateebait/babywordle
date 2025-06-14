@@ -58,7 +58,7 @@
     .hidden { display: none !important; }
     #alert { position: absolute; top: 10%; left: 50%; transform: translateX(-50%); background: #333; padding: 12px 24px; border-radius: 4px; font-size: 1.2em; display: none; z-index: 20; }
     
-    /* Name Modal Specific Styles (RESTORED TO USER'S PREVIOUS "WORKING" STATE) */
+    /* Name Modal Specific Styles */
     #name-modal .modal-content {
         background:#1e1e1f;
         padding: 20px;
@@ -69,18 +69,15 @@
         width: 300px;
         position: relative;
         z-index: 11;
-        /* These properties were present in the code you said worked fine for name entry on mobile */
-        max-height: 80vh; 
-        overflow-y: auto;   
-        overflow-x: hidden; 
-        display: flex; 
-        flex-direction: column; 
-        justify-content: space-between; 
+        /* Reverted these for mobile keyboard compatibility */
+        /* max-height: 80vh; */ 
+        /* overflow-y: auto; */
+        overflow-x: hidden; /* Keep horizontal scroll hidden */
+        /* Removed flex-direction/justify-content to let browser handle scroll more naturally */
     }
     #name-modal input[type="text"] {
         padding: 10px;
         width: calc(100% - 20px);
-        box-sizing: border-box; /* Crucial: ensures padding is included in width */
         margin: 15px 0;
         border: 1px solid #555;
         border-radius: 4px;
@@ -97,16 +94,16 @@
         padding: 10px 20px;
     }
     
-    /* Scoreboard Specific Styles (NEW & REFINED) */
+    /* Scoreboard Specific Styles */
     #final-scoreboard-modal .modal-content {
-        background: #1e1e1f;
-        padding: 10px; /* Reduced padding to give more internal space */
+        background: #1e1e1e;
+        padding: 15px;
         border-radius: 8px;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-        max-width: calc(100vw - 20px); /* Maximize width, leaving 10px on each side of screen */
-        width: 700px; /* Max width for desktop */
+        max-width: 80%; /* Scoreboard content fills 80% of the modal */
+        width: 500px; /* Max width for desktop */
         color: #eee;
-        display: flex;
+        display: flex; /* Flex for main modal content */
         flex-direction: column;
     }
     /* Dedicated container for the scrollable table */
@@ -116,27 +113,25 @@
         overflow-x: hidden; /* Prevent horizontal scroll */
         margin-bottom: 10px; /* Space between table and button */
         flex-grow: 1; /* Allow container to grow if needed */
-        padding-right: 5px; /* Space for scrollbar on right, if present */
     }
     #scoreboard table {
-        width: 100%; /* Make table fill its container */
+        width: 100%;
         border-collapse: collapse;
         margin-top: 10px;
         font-size: 0.9em;
         table-layout: fixed; /* Fixed table layout for better column control */
     }
     /* Column widths for better spacing */
-    #scoreboard th:nth-child(1), #scoreboard td:nth-child(1) { width: 35%; } /* Name */
+    #scoreboard th:nth-child(1), #scoreboard td:nth-child(1) { width: 30%; } /* Name */
     #scoreboard th:nth-child(2), #scoreboard td:nth-child(2) { width: 15%; } /* Guesses */
     #scoreboard th:nth-child(3), #scoreboard td:nth-child(3) { width: 20%; } /* Time */
-    #scoreboard th:nth-child(4), #scoreboard td:nth-child(4) { width: 30%; } /* First Guess */
+    #scoreboard th:nth-child(4), #scoreboard td:nth-child(4) { width: 35%; } /* First Guess */
 
     #scoreboard th,
     #scoreboard td {
-        padding: 10px 5px; /* Slightly more vertical padding, reduced horizontal padding */
+        padding: 8px 12px;
         border: 1px solid #444;
         text-align: center;
-        word-break: break-word; /* Allow long words to break */
     }
     #scoreboard th {
         background-color: #333;
@@ -247,14 +242,8 @@
     let currentRow = 0;
     let currentGuess = "";
     let allowedWords = [];
-    const encodedTarget = [69, 77, 77, 69, 84, 84]; // Target word "EMMETT"
+    const encodedTarget = [69, 77, 77, 69, 84, 84];
     const targetWord = String.fromCharCode(...encodedTarget).toLowerCase();
-
-    // Key for local storage to prevent re-submissions for the same word
-    // !! TEMPORARILY DISABLED FOR TESTING - RE-ADD FOR PRODUCTION !!
-    // const LAST_WIN_KEY = 'babyWordleWon_' + targetWord; 
-    const LAST_WIN_KEY = 'DISABLED_FOR_TESTING'; // Placeholder to avoid error
-
 
     const board = document.getElementById("game-board");
     const keyboard = document.getElementById("keyboard");
@@ -302,29 +291,7 @@
       });
     }
 
-    // Function to disable/enable keyboard input
-    function setKeyboardEnabled(enabled) {
-        const keyboardButtons = document.querySelectorAll('#keyboard button');
-        keyboardButtons.forEach(button => {
-            button.disabled = !enabled;
-        });
-        document.removeEventListener("keydown", handleKey); // Remove to disable
-        if (enabled) {
-            document.addEventListener("keydown", handleKey); // Add to enable
-        }
-    }
-
     function handleKey(key) {
-      // If keyboard is explicitly disabled, do nothing
-      if (document.activeElement && document.activeElement.tagName === 'INPUT') {
-          // Allow input into the name field
-          return;
-      }
-      // Check if any keyboard button is disabled, if so, the keyboard is generally disabled
-      if (document.querySelector('#keyboard button:disabled')) {
-          return;
-      }
-
       if (key === "Backspace") {
         currentGuess = currentGuess.slice(0, -1);
       } else if (key === "Enter") {
@@ -359,12 +326,6 @@
     }
 
     async function submitGuess() {
-      // !! TEMPORARILY DISABLED FOR TESTING !!
-      // if (localStorage.getItem(LAST_WIN_KEY)) {
-      //     showAlert("You've already won this word!");
-      //     return;
-      // }
-      
       if (currentGuess.length !== wordLength) return;
       if (!allowedWords.includes(currentGuess)) {
         shakeRow();
@@ -433,21 +394,14 @@
       firstGuessWord = null;
       currentRow = 0;
       currentGuess = "";
-      setKeyboardEnabled(true); // Ensure keyboard is enabled when game starts
     }
 
     function restartGame() {
-      // !! TEMPORARILY REMOVED FOR TESTING !!
-      // localStorage.removeItem(LAST_WIN_KEY); 
       window.location.reload();
     }
 
     function handleWin() {
         console.log("handleWin triggered");
-        // !! TEMPORARILY REMOVED FOR TESTING !!
-        // localStorage.setItem(LAST_WIN_KEY, 'true'); 
-        setKeyboardEnabled(false); // Disable game keyboard after winning
-
         if (typeof WIN_MESSAGE !== 'undefined') {
             winMessageContainer.innerHTML = WIN_MESSAGE;
         } else {
@@ -466,10 +420,10 @@
         if (submitNameButton) submitNameButton.disabled = false;
         if (cancelNameButton) cancelNameButton.disabled = false;
         finalScoreboardModal.classList.add("hidden");
-        // Scroll the input into view. Mobile browsers often handle this, but explicit call is safer.
+        // NEW: Scroll the window/body to ensure the input and buttons are visible
+        // This is a common mobile solution for keyboard overlays.
         setTimeout(() => {
-            // Using 'start' to push the element to the top of the visible area
-            playerNameInput.scrollIntoView({ behavior: 'smooth', block: 'start' }); 
+            playerNameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }, 100); // Small delay to allow keyboard to appear
     }
 
@@ -547,13 +501,6 @@
 
     async function submitScore() {
         console.log("Submit button clicked!");
-        // !! TEMPORARILY DISABLED FOR TESTING !!
-        // if (localStorage.getItem(LAST_WIN_KEY)) {
-        //     showAlert("You've already submitted a score for this word.");
-        //     closeNameModal(); // Close the name modal
-        //     return;
-        // }
-
         const name = playerNameInput.value.trim();
         if (!name) {
             showAlert("Please enter a name.");
@@ -587,12 +534,6 @@
         winScreen.classList.remove("hidden");
     }
 
-    // NEW: Helper function to reset win status for testing (accessible in browser console)
-    window.gameLogic.resetWinStatusForTesting = function() {
-        localStorage.removeItem('babyWordleWon_' + targetWord); // Use the correct, dynamic key
-        console.log("Win status reset for testing. Please refresh the page.");
-    };
-
 
     document.addEventListener("DOMContentLoaded", () => {
         console.log("DOMContentLoaded fired.");
@@ -604,16 +545,6 @@
         console.log("scoreboardTableContainer:", scoreboardTableContainer);
         console.log("submitNameButton:", submitNameButton);
         console.log("cancelNameButton:", cancelNameButton);
-
-        // !! TEMPORARILY DISABLED FOR TESTING !!
-        // if (localStorage.getItem(LAST_WIN_KEY)) {
-        //     showAlert("You've already won this Baby Wordle!");
-        //     setKeyboardEnabled(false);
-        // } else {
-        //     setKeyboardEnabled(true);
-        // }
-        // Ensure keyboard is enabled by default for testing
-        setKeyboardEnabled(true); 
 
 
         if (startGameButton) {
@@ -633,8 +564,7 @@
                 allowedWords = data.allowedWords.map(w => w.toLowerCase());
                 createBoard();
                 createKeyboard();
-                // We've moved keydown listener to setKeyboardEnabled
-                // document.addEventListener("keydown", handleKey);
+                document.addEventListener("keydown", e => handleKey(e.key));
 
                 introScreen.classList.remove("hidden");
                 winScreen.classList.add("hidden");
@@ -653,8 +583,7 @@
         closeNameModal: closeNameModal,
         showScoreboard: showScoreboard,
         handleKey: handleKey,
-        backToWinScreen: backToWinScreen,
-        resetWinStatusForTesting: window.gameLogic.resetWinStatusForTesting // Expose for testing
+        backToWinScreen: backToWinScreen
     };
   </script>
 </body>
