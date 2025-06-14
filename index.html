@@ -422,29 +422,30 @@
 }
 
 
-        function handleWin() {
-          console.log("handleWin triggered");
-        
-          const alreadyWon = localStorage.getItem("babyWordleSolved") === "true";
-        
-          if (!alreadyWon) {
-            localStorage.setItem("babyWordleSolved", "true");
-          }
-        
-          if (typeof WIN_MESSAGE !== 'undefined') {
-            winMessageContainer.innerHTML = WIN_MESSAGE;
-          } else {
-            winMessageContainer.innerHTML = "You Win!";
-          }
-        
-          winScreen.classList.remove("hidden");
-        
-          if (!alreadyWon) {
-            openNameModal(); // Only show modal if they haven't submitted before
-          } else {
-            console.log("Player has already submitted; skipping name modal.");
-          }
-        }
+           function handleWin() {
+      console.log("handleWin triggered");
+    
+      const alreadyWon = localStorage.getItem("babyWordleSolved") === "true";
+    
+      if (!alreadyWon) {
+        localStorage.setItem("babyWordleSolved", "true");
+      }
+    
+      if (typeof WIN_MESSAGE !== 'undefined') {
+        winMessageContainer.innerHTML = WIN_MESSAGE;
+      } else {
+        winMessageContainer.innerHTML = "You Win!";
+      }
+    
+      winScreen.classList.remove("hidden");
+    
+      if (!alreadyWon) {
+        openNameModal(); // ✅ Show modal if it's the first win
+      } else {
+        console.log("Player has already submitted; skipping name modal.");
+      }
+    }
+
 
 
     function openNameModal() {
