@@ -392,7 +392,6 @@
     }
 
     function startGame() {
-      sessionStorage.setItem('gameStarted', 'true'); 
       introScreen.classList.add("hidden");
       startTime = Date.now();
       totalWrongGuesses = 0;
@@ -401,43 +400,10 @@
       currentGuess = "";
     }
 
-      function restartGame() {
-      resetGame(); // Call the new reset function
-    }
+    function restartGame() {
+      window.location.reload();
+    }
 
-    // Add this new function
-    function resetGame() {
-        // Clear the game board tiles
-        const tiles = document.querySelectorAll(".tile");
-        tiles.forEach(tile => {
-            tile.textContent = "";
-            tile.classList.remove("correct", "present", "absent", "shake", "flip");
-        });
-
-        // Reset keyboard button colors
-        const keyboardButtons = document.querySelectorAll("#keyboard button");
-        keyboardButtons.forEach(button => {
-            button.classList.remove("correct", "present", "absent");
-        });
-
-        // Reset game variables
-        startTime = Date.now();
-        totalWrongGuesses = 0;
-        firstGuessWord = null;
-        currentRow = 0;
-        currentGuess = "";
-
-        // Hide all modals/screens except the main game area
-        winScreen.classList.add("hidden");
-        loseScreen.classList.add("hidden");
-        nameModal.classList.add("hidden");
-        finalScoreboardModal.classList.add("hidden");
-        introScreen.classList.add("hidden"); // Ensure intro is hidden after a restart
-
-        // Reset the player name input in case it was pre-filled
-        playerNameInput.value = '';
-    }
-    
     function handleWin() {
         console.log("handleWin triggered");
         if (typeof WIN_MESSAGE !== 'undefined') {
@@ -598,21 +564,11 @@
                 createKeyboard();
                 document.addEventListener("keydown", e => handleKey(e.key));
 
-// Check if the game has been started in this session before
-                if (sessionStorage.getItem('gameStarted') === 'true') {
-                    // If already started, directly start the game (bypassing intro screen)
-                    introScreen.classList.add("hidden"); // Ensure intro is hidden
-                    startGame(); // Start the game immediately
-                } else {
-                    // First time load in session, show intro screen
-                    introScreen.classList.remove("hidden");
-                }
-
-                // Always ensure other modals are hidden on load
-                winScreen.classList.add("hidden");
-                loseScreen.classList.add("hidden");
-                nameModal.classList.add("hidden");
-                finalScoreboardModal.classList.add("hidden");
+                introScreen.classList.remove("hidden");
+                winScreen.classList.add("hidden");
+                loseScreen.classList.add("hidden");
+                nameModal.classList.add("hidden");
+                finalScoreboardModal.classList.add("hidden");
             })
             .catch(error => console.error("Error loading words.json:", error));
     });
@@ -626,7 +582,6 @@
         showScoreboard: showScoreboard,
         handleKey: handleKey,
         backToWinScreen: backToWinScreen
-        resetGame: resetGame
     };
   </script>
 </body>
