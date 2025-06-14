@@ -477,11 +477,9 @@
           let scoreboardHtml = "<h3>Scoreboard</h3><table><thead><tr><th>Name</th><th>Guesses</th><th>Time</th><th>First Guess</th></tr></thead><tbody>"; // Removed (s)
           let rowCount = 0;
           querySnapshot.forEach(doc => {
-            if (rowCount < 10) { // Limit to 10 rows
-                const data = doc.data();
-                scoreboardHtml += `<tr><td>${data.name}</td><td>${data.guesses}</td><td>${formatTime(data.time)}</td><td>${data.firstGuess || 'N/A'}</td></tr>`;
-                rowCount++;
-            }
+              const data = doc.data();
+              scoreboardHtml += `<tr><td><span class="math-inline">\{data\.name\}</td\><td\></span>{data.guesses}</td><td><span class="math-inline">\{formatTime\(data\.time\)\}</td\><td\></span>{data.firstGuess || 'N/A'}</td></tr>`;
+              rowCount++; // rowCount will still increment, but won't limit display
           });
           scoreboardHtml += "</tbody></table>";
           scoreboardTableContainer.innerHTML = scoreboardHtml;
