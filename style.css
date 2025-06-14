@@ -69,23 +69,24 @@ button {
   display: none;
 }
 
-#scoreboard table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 20px;
-  font-size: 1em;
-  background: #1e1e1e;
+#scoreboard-table-container table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    font-size: 0.9em;
+    table-layout: fixed;
 }
 
-#scoreboard th,
-#scoreboard td {
-  padding: 8px 12px;
-  border: 1px solid #444;
-  text-align: center;
+#scoreboard-table-container th,
+#scoreboard-table-container td {
+    padding: 10px 5px; /* Slightly more vertical padding, reduced horizontal padding for more content width */
+    border: 1px solid #444;
+    text-align: center;
+    word-break: break-word; /* Ensure long words break */
 }
 
-#scoreboard th {
-  background-color: #333;
+#scoreboard-table-container th {
+    background-color: #333;
 }
 
 .modal.hidden {
