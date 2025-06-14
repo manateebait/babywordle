@@ -598,18 +598,21 @@
                 createKeyboard();
                 document.addEventListener("keydown", e => handleKey(e.key));
 
-// Only show intro screen on initial load
-                if (sessionStorage.getItem('gameStarted') !== 'true') {
-                    introScreen.classList.remove("hidden");
+// Check if the game has been started in this session before
+                if (sessionStorage.getItem('gameStarted') === 'true') {
+                    // If already started, directly start the game (bypassing intro screen)
+                    introScreen.classList.add("hidden"); // Ensure intro is hidden
+                    startGame(); // Start the game immediately
                 } else {
-                    // If game was already started, hide intro and directly start game (or show relevant screen)
-                    introScreen.classList.add("hidden");
-                    startGame(); // Automatically start the game if not first load
+                    // First time load in session, show intro screen
+                    introScreen.classList.remove("hidden");
                 }
+
+                // Always ensure other modals are hidden on load
                 winScreen.classList.add("hidden");
                 loseScreen.classList.add("hidden");
                 nameModal.classList.add("hidden");
-                finalScoreboardModal.classList.add("hidden");
+                finalScoreboardModal.classList.add("hidden");
             })
             .catch(error => console.error("Error loading words.json:", error));
     });
