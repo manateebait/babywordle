@@ -194,7 +194,7 @@
 
   <div id="lose-screen" class="modal hidden">
     <h2>Better luck next time!</h2>
-    <button onclick="window.gameLogic.startNewGameAfterLoss()">Try Again</button>
+    <button onclick="window.gameLogic.resetAndStartNewGame()">Try Again</button>
   </div>
 
   <div id="name-modal" class="modal hidden">
@@ -216,7 +216,7 @@
           <div class="modal-buttons">
               <button onclick="window.gameLogic.backToWinScreen()">Back to Win Screen</button>
           </div>
-      </div>
+          <button onclick="window.gameLogic.resetGameAndStartNewSession()">Start New Session</button>       </div>
   </div>
 
   <script src="js/win-message.js"></script>
@@ -237,23 +237,26 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Session-level variables
-    let overallSessionTimeStart = Date.now();
-    let totalSessionGuesses = 0; // Accumulates guesses from all games in the session
-    let firstOverallGuess = null; // Stores the very first guess of the session
+    // --- SESSION-LEVEL VARIABLES ---
+    // These variables will persist across multiple games within the same browser session.
+    // They are initialized once when the page first loads.
+    let sessionStartTime = Date.now(); // Tracks the start of the entire session
+    let totalSessionGuesses = 0; // Accumulates all guesses from all games in the session
+    let firstOverallSessionGuess = null; // Stores the very first guess made in the session
 
-    // Game-level variables (reset for each new game)
-    let gameStartTime = Date.now();
-    let currentGameGuesses = 0; // Guesses for the current game
-    let firstGameGuess = null; // First guess of the current game
-    let targetWord = ""; // Will be set dynamically per game
+    // --- GAME-LEVEL VARIABLES ---
+    // These variables will be reset for each new game.
+    let gameStartTime = Date.now(); // Tracks the start of the current game
+    let currentGameGuesses = 0; // Tracks guesses for the current individual game
+    let firstCurrentGameGuess = null; // Stores the first guess for the current game
+    let targetWord = ""; // The word to guess for the current game
 
     const wordLength = 6;
     const maxGuesses = 6;
     let currentRow = 0;
     let currentGuess = "";
     let allowedWords = [];
-    const defaultEncodedTarget = [69, 77, 77, 69, 84, 84]; // Use a default for first game or if no words.json
+    const defaultEncodedTarget = [69, 77, 77, 69, 84, 84]; // Default target word if words.json fails
 
     const board = document.getElementById("game-board");
     const keyboard = document.getElementById("keyboard");
@@ -271,7 +274,6 @@
     const cancelNameButton = document.getElementById("cancelNameButton");
 
 
-    // ONLY CREATE BOARD ELEMENTS ONCE
     function createBoard() {
       for (let i = 0; i < maxGuesses * wordLength; i++) {
         const tile = document.createElement("div");
@@ -284,12 +286,12 @@
       document.querySelectorAll(".keyboard-button").forEach(button => {
         if (button.id !== 'key-Enter' && button.id !== 'key-Backspace') {
           button.classList.remove("correct", "present", "absent");
-          button.style.backgroundColor = ''; // Reset to default from CSS
+          // You might need to explicitly set background-color if your CSS doesn't handle removing classes well
+          button.style.backgroundColor = ''; 
         }
       });
     }
 
-    // ONLY CREATE KEYBOARD ELEMENTS ONCE
     function createKeyboard() {
       const rows = [
         "QWERTYUIOP",
@@ -313,18 +315,18 @@
     }
 
     function handleKey(key) {
-      // Ensure game is active before processing key presses
+      // Only allow key input if game is active (no modals are shown)
       if (introScreen.classList.contains("hidden") && 
           winScreen.classList.contains("hidden") && 
           loseScreen.classList.contains("hidden") && 
           nameModal.classList.contains("hidden") &&
           finalScoreboardModal.classList.contains("hidden")) {
-          
+
         if (key === "Backspace") {
           currentGuess = currentGuess.slice(0, -1);
         } else if (key === "Enter") {
           submitGuess();
-        } else if (key.length === 1 && key.match(/[a-zA-Z]/) && currentGuess.length < wordLength) {
+        } else if (key.length === 1 && key.match(/[a-zA-Z]/) && currentGuess.length < wordLength) { // Only allow letters
           currentGuess += key.toLowerCase();
         }
         updateBoard();
@@ -362,18 +364,18 @@
         return;
       }
       
-      // Record the first guess of the session if it hasn't been set yet
-      if (firstOverallGuess === null) {
-        firstOverallGuess = currentGuess;
+      // --- CHANGES START HERE ---
+
+      // Set the first overall session guess (only once per page load)
+      if (firstOverallSessionGuess === null) {
+        firstOverallSessionGuess = currentGuess;
       }
-      // Record the first guess of the current game if it hasn't been set yet
-      if (firstGameGuess === null) {
-        firstGameGuess = currentGuess;
+      // Set the first guess for the current game
+      if (firstCurrentGameGuess === null) {
+        firstCurrentGameGuess = currentGuess;
       }
 
       const tiles = document.querySelectorAll(".tile");
-      
-
       for (let i = 0; i < wordLength; i++) {
         const index = currentRow * wordLength + i;
         const tile = tiles[index];
@@ -394,13 +396,15 @@
       }
 
       setTimeout(() => {
-        currentGameGuesses++; // Increment guesses for the current game
+        // Increment guesses for the current game
+        currentGameGuesses++; 
 
         if (currentGuess === targetWord) {
           handleWin();
           return;
         }
 
+        // totalWrongGuesses is no longer needed as we track totalSessionGuesses and currentGameGuesses
         currentRow++;
         if (currentRow >= maxGuesses) {
           loseScreen.classList.remove("hidden");
@@ -412,75 +416,78 @@
 
     function updateKey(letter, status) {
       const key = document.getElementById(`key-${letter.toUpperCase()}`);
-      if (!key) return; // Add check for null key
-
-      // Only update if the new status is "correct" or if the current status isn't already "correct"
-      if (status === "correct") {
-        key.classList.remove("present", "absent");
-        key.classList.add("correct");
-      } else if (status === "present" && !key.classList.contains("correct")) {
-        key.classList.remove("absent");
-        key.classList.add("present");
-      } else if (status === "absent" && !key.classList.contains("correct") && !key.classList.contains("present")) {
-        key.classList.add("absent");
+      if (!key.classList.contains("correct")) {
+        if (status === "correct") {
+          key.classList.remove("present", "absent");
+          key.classList.add("correct");
+        } else if (status === "present" && !key.classList.contains("present")) {
+          key.classList.remove("absent");
+          key.classList.add("present");
+        } else if (!key.classList.contains("present")) {
+          key.classList.add("absent");
+        }
       }
     }
 
+    // This function starts a brand new game (first game of a session or after submitting score)
     function startGame() {
       introScreen.classList.add("hidden");
-      // Initialize game-specific variables for the first game or subsequent games
-      resetGame(); // This will also set the target word
+      // Reset game-specific variables for the new game
+      resetCurrentGame();
+      // Make sure a new target word is set for this game
+      setTargetWordForNewGame();
     }
 
-    // New function to reset game state without reloading the page
-    function resetGame() {
+    // NEW: This function resets the game board and state for a new game without refreshing the page
+    function resetCurrentGame() {
       currentRow = 0;
       currentGuess = "";
-      currentGameGuesses = 0;
-      firstGameGuess = null; // Reset first guess for the new game
-      gameStartTime = Date.now(); // Start time for the current game
+      currentGameGuesses = 0; // Reset guesses for the new game
+      firstCurrentGameGuess = null; // Reset first guess for the new game
+      gameStartTime = Date.now(); // Start timing for the new game
 
-      // Clear the board visuals by iterating through existing tiles
+      // Clear existing tile content and remove classes
       const tiles = document.querySelectorAll(".tile");
       tiles.forEach(tile => {
         tile.textContent = "";
         tile.classList.remove("correct", "present", "absent", "flip", "shake");
-        // Ensure any inline styles are removed if they were added dynamically (though not typically for colors)
-        tile.style.backgroundColor = '';
-        tile.style.borderColor = '';
       });
 
-      // Reset keyboard colors
-      resetKeyboardColors();
+      resetKeyboardColors(); // Reset keyboard button colors
 
-      // Hide all modals that might be open
+      // Hide all modals
       winScreen.classList.add("hidden");
       loseScreen.classList.add("hidden");
       nameModal.classList.add("hidden");
       finalScoreboardModal.classList.add("hidden");
-
-      // Set a new target word for the current game
-      // This ensures a new word for each "Try Again" or "Start Game" click
-      if (allowedWords.length > 0) {
-        targetWord = allowedWords[Math.floor(Math.random() * allowedWords.length)];
-      } else {
-        // Fallback to default if words.json failed to load
-        targetWord = String.fromCharCode(...defaultEncodedTarget).toLowerCase();
-        console.warn("Using default target word as allowedWords is empty.");
-      }
-      console.log("New target word for this game:", targetWord); // For debugging
     }
 
+    // NEW: Function to pick a new target word for a new game
+    function setTargetWordForNewGame() {
+        if (allowedWords.length > 0) {
+            targetWord = allowedWords[Math.floor(Math.random() * allowedWords.length)];
+        } else {
+            targetWord = String.fromCharCode(...defaultEncodedTarget).toLowerCase();
+            console.warn("words.json is empty or failed to load. Using default target word.");
+        }
+        console.log("New target word for this game:", targetWord); // For debugging
+    }
 
-    function startNewGameAfterLoss() {
-      totalSessionGuesses += maxGuesses; // All 6 guesses were used in this lost game
+
+    // NEW: This function replaces the old `restartGame()` that reloaded the page
+    function resetAndStartNewGame() {
+      // Before resetting, accumulate the guesses from the just-finished (lost) game
+      totalSessionGuesses += maxGuesses; // If lost, all 6 guesses were used
       console.log(`Total session guesses after loss: ${totalSessionGuesses}`);
-      resetGame();
+      
+      resetCurrentGame(); // Reset the board and game variables
+      setTargetWordForNewGame(); // Get a new word for the next game
     }
 
     function handleWin() {
         console.log("handleWin triggered");
-        totalSessionGuesses += currentGameGuesses; // Add guesses from the current winning game
+        // Accumulate guesses from the current winning game into session total
+        totalSessionGuesses += currentGameGuesses; 
         console.log(`Total session guesses after win: ${totalSessionGuesses}`);
 
         if (typeof WIN_MESSAGE !== 'undefined') {
@@ -525,6 +532,7 @@
       } catch (e) {
         console.error("Error adding document: ", e);
         throw e;
+        // --- CHANGES END HERE ---
       }
     }
 
@@ -532,8 +540,8 @@
     function formatTime(seconds) {
         const minutes = Math.floor(seconds / 60);
         const remainingSeconds = seconds % 60;
-        const formattedMinutes = String(minutes).padStart(1, '0'); // No leading zero if single digit for minutes
-        const formattedSeconds = String(remainingSeconds).padStart(2, '0'); // Always two digits for seconds
+        const formattedMinutes = String(minutes).padStart(1, '0');
+        const formattedSeconds = String(remainingSeconds).padStart(2, '0');
         return `${formattedMinutes}:${formattedSeconds}`;
     }
 
@@ -585,20 +593,22 @@
         if (submitNameButton) submitNameButton.disabled = true;
         if (cancelNameButton) cancelNameButton.disabled = true;
 
-        // These are now the session-wide accumulated stats
-        const guesses = totalSessionGuesses;
-        const time = Math.floor((Date.now() - overallSessionTimeStart) / 1000); // Total session time
-        const firstGuess = firstOverallGuess; // The very first guess of the entire session
+        // --- CHANGES START HERE ---
+        // We submit the accumulated session data
+        const guesses = totalSessionGuesses; // Total guesses over the session
+        const time = Math.floor((Date.now() - sessionStartTime) / 1000); // Total session time
+        const firstGuess = firstOverallSessionGuess; // The very first guess of the session
+        // --- CHANGES END HERE ---
 
         try {
             await saveResult(name, guesses, time, firstGuess);
             console.log("Score submission successful, closing modal.");
             
-            // After successful submission, reset session variables for a completely new session start
-            // This ensures that if they submit and then play again, it's a fresh session for the scoreboard.
-            overallSessionTimeStart = Date.now(); 
-            totalSessionGuesses = 0;
-            firstOverallGuess = null;
+            // --- CHANGES START HERE ---
+            // After submitting a score for the session, reset session-level stats
+            // to prepare for a completely new session if the user plays again later.
+            resetGameAndStartNewSession();
+            // --- CHANGES END HERE ---
 
         } catch (error) {
             console.error("Error during score submission:", error);
@@ -609,7 +619,8 @@
             return;
         }
         closeNameModal(); // Close the name modal after successful submission
-        resetGame(); // Reset the game board for a potential new game
+        resetCurrentGame(); // Reset the game board for a potential new game
+        setTargetWordForNewGame(); // Get a new word for the next game
     }
 
     // Function to go back from scoreboard to win screen
@@ -619,11 +630,26 @@
         winScreen.classList.remove("hidden"); // Show win screen
     }
 
+    // NEW: Function to perform a full session reset (e.g., if user clicks a "Start New Session" button)
+    function resetGameAndStartNewSession() {
+        sessionStartTime = Date.now();
+        totalSessionGuesses = 0;
+        firstOverallSessionGuess = null;
+        resetCurrentGame(); // Reset current game state
+        setTargetWordForNewGame(); // Get a new word for the next game
+        // Hide all modals and show intro screen, effectively restarting the whole app
+        winScreen.classList.add("hidden");
+        loseScreen.classList.add("hidden");
+        nameModal.classList.add("hidden");
+        finalScoreboardModal.classList.add("hidden");
+        introScreen.classList.remove("hidden");
+    }
+
 
     document.addEventListener("DOMContentLoaded", () => {
         console.log("DOMContentLoaded fired.");
         
-        // ONLY CREATE BOARD AND KEYBOARD ONCE AT DOM CONTENT LOAD
+        // Initial setup of board and keyboard, only once
         createBoard();
         createKeyboard();
         document.addEventListener("keydown", e => handleKey(e.key));
@@ -644,17 +670,10 @@
             .then(data => {
                 allowedWords = data.allowedWords.map(w => w.toLowerCase());
                 
-                // Set the initial target word after words are loaded
-                if (allowedWords.length > 0) {
-                  targetWord = allowedWords[Math.floor(Math.random() * allowedWords.length)];
-                } else {
-                  targetWord = String.fromCharCode(...defaultEncodedTarget).toLowerCase();
-                  console.warn("words.json is empty or failed to load. Using default target word.");
-                }
-                console.log("Initial target word set to:", targetWord);
+                // Set initial target word here, after words are loaded
+                setTargetWordForNewGame();
 
-
-                introScreen.classList.remove("hidden");
+                introScreen.classList.remove("hidden"); // Show intro screen
                 winScreen.classList.add("hidden");
                 loseScreen.classList.add("hidden");
                 nameModal.classList.add("hidden");
@@ -665,13 +684,14 @@
 
     window.gameLogic = {
         startGame: startGame,
-        startNewGameAfterLoss: startNewGameAfterLoss,
+        resetAndStartNewGame: resetAndStartNewGame, // Renamed from restartGame
         submitScore: submitScore,
         openNameModal: openNameModal,
         closeNameModal: closeNameModal,
         showScoreboard: showScoreboard,
         handleKey: handleKey,
-        backToWinScreen: backToWinScreen
+        backToWinScreen: backToWinScreen,
+        resetGameAndStartNewSession: resetGameAndStartNewSession // New function for full session reset
     };
   </script>
 </body>
