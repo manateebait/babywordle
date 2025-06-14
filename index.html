@@ -474,15 +474,18 @@
           const q = query(collection(db, "scoreboard"), orderBy("guesses", "asc"), orderBy("time", "asc"));
           const querySnapshot = await getDocs(q);
 
-          let scoreboardHtml = `<table><thead><tr><th>Name</th><th>Guesses</th><th>Time</th><th>First Guess</th></tr></thead><tbody>`; 
-// ... many lines later ...
-// CHANGE THIS LINE: (Note the backticks ` `)
-scoreboardHtml += `</tbody></table>`; 
+          let scoreboardHtml = "<h3>Scoreboard</h3><table><thead><tr><th>Name</th><th>Guesses</th><th>Time</th><th>First Guess</th></tr></thead><tbody>"; 
+            // ... many lines later ...
+            // Find this line (it will likely start with double quotes)
+            scoreboardHtml += "</tbody></table>"; 
+        
           let rowCount = 0;
           querySnapshot.forEach(doc => {
-              const data = doc.data();
-              scoreboardHtml += `<tr><td><span class="math-inline">\{data\.name\}</td\><td\></span>{data.guesses}</td><td><span class="math-inline">\{formatTime\(data\.time\)\}</td\><td\></span>{data.firstGuess || 'N/A'}</td></tr>`;
-              rowCount++; // rowCount will still increment, but won't limit display
+            if (rowCount < 10) { // <--- REMOVE THIS LINE
+                const data = doc.data();
+                scoreboardHtml += `<tr><td><span class="math-inline">\{data\.name\}</td\><td\></span>{data.guesses}</td><td><span class="math-inline">\{formatTime\(data\.time\)\}</td\><td\></span>{data.firstGuess || 'N/A'}</td></tr>`;
+                rowCount++;
+            } // <--- AND REMOVE THIS LINE
           });
           scoreboardHtml += "</tbody></table>";
           scoreboardTableContainer.innerHTML = scoreboardHtml;
