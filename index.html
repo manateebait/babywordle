@@ -69,11 +69,12 @@
         width: 300px;
         position: relative;
         z-index: 11;
-        /* Reverted these for mobile keyboard compatibility */
-        /* max-height: 80vh; */ 
-        /* overflow-y: auto; */
-        overflow-x: hidden; /* Keep horizontal scroll hidden */
-        /* Removed flex-direction/justify-content to let browser handle scroll more naturally */
+        max-height: 80vh; 
+        overflow-y: auto;   
+        overflow-x: hidden; 
+        display: flex; 
+        flex-direction: column; 
+        justify-content: space-between; 
     }
     #name-modal input[type="text"] {
         padding: 10px;
@@ -86,7 +87,7 @@
         font-size: 1em;
     }
     #name-modal .modal-buttons {
-        margin-top: 15px; /* Keep a standard margin */
+        margin-top: 15px; 
         text-align: center;
     }
     #name-modal button {
@@ -96,36 +97,36 @@
     
     /* Scoreboard Specific Styles */
     #final-scoreboard-modal .modal-content {
-        background: #1e1e1e;
+        background: #1e1e1f;
         padding: 15px;
         border-radius: 8px;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-        max-width: 80%; /* Scoreboard content fills 80% of the modal */
-        width: 500px; /* Max width for desktop */
+        max-width: 80%;
+        width: 500px;
         color: #eee;
-        display: flex; /* Flex for main modal content */
+        display: flex; 
         flex-direction: column;
     }
     /* Dedicated container for the scrollable table */
     #scoreboard-table-container {
-        max-height: 250px; /* Fixed height for scrolling (adjust as needed) */
-        overflow-y: auto; /* Enable vertical scroll */
-        overflow-x: hidden; /* Prevent horizontal scroll */
-        margin-bottom: 10px; /* Space between table and button */
-        flex-grow: 1; /* Allow container to grow if needed */
+        max-height: 250px;
+        overflow-y: auto;
+        overflow-x: hidden; 
+        margin-bottom: 10px; 
+        flex-grow: 1; 
     }
     #scoreboard table {
         width: 100%;
         border-collapse: collapse;
         margin-top: 10px;
         font-size: 0.9em;
-        table-layout: fixed; /* Fixed table layout for better column control */
+        table-layout: fixed; 
     }
     /* Column widths for better spacing */
-    #scoreboard th:nth-child(1), #scoreboard td:nth-child(1) { width: 30%; } /* Name */
-    #scoreboard th:nth-child(2), #scoreboard td:nth-child(2) { width: 15%; } /* Guesses */
-    #scoreboard th:nth-child(3), #scoreboard td:nth-child(3) { width: 20%; } /* Time */
-    #scoreboard th:nth-child(4), #scoreboard td:nth-child(4) { width: 35%; } /* First Guess */
+    #scoreboard th:nth-child(1), #scoreboard td:nth-child(1) { width: 30%; }
+    #scoreboard th:nth-child(2), #scoreboard td:nth-child(2) { width: 15%; }
+    #scoreboard th:nth-child(3), #scoreboard td:nth-child(3) { width: 20%; }
+    #scoreboard th:nth-child(4), #scoreboard td:nth-child(4) { width: 35%; }
 
     #scoreboard th,
     #scoreboard td {
@@ -420,8 +421,7 @@
         if (submitNameButton) submitNameButton.disabled = false;
         if (cancelNameButton) cancelNameButton.disabled = false;
         finalScoreboardModal.classList.add("hidden");
-        // NEW: Scroll the window/body to ensure the input and buttons are visible
-        // This is a common mobile solution for keyboard overlays.
+        // Scroll the input into view. Mobile browsers often handle this, but explicit call is safer.
         setTimeout(() => {
             playerNameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }, 100); // Small delay to allow keyboard to appear
@@ -458,7 +458,7 @@
         const remainingSeconds = seconds % 60;
         const formattedMinutes = String(minutes).padStart(1, '0');
         const formattedSeconds = String(remainingSeconds).padStart(2, '0');
-        return `${formattedMinutes}:${formattedSeconds}`;
+        return `<span class="math-inline">\{formattedMinutes\}\:</span>{formattedSeconds}`;
     }
 
     // showScoreboard function to be called by button
@@ -474,18 +474,14 @@
           const q = query(collection(db, "scoreboard"), orderBy("guesses", "asc"), orderBy("time", "asc"));
           const querySnapshot = await getDocs(q);
 
-          let scoreboardHtml = "<h3>Scoreboard</h3><table><thead><tr><th>Name</th><th>Guesses</th><th>Time</th><th>First Guess</th></tr></thead><tbody>"; 
-            // ... many lines later ...
-            // Find this line (it will likely start with double quotes)
-            scoreboardHtml += "</tbody></table>"; 
-        
+          let scoreboardHtml = "<h3>Scoreboard</h3><table><thead><tr><th>Name</th><th>Guesses</th><th>Time</th><th>First Guess</th></tr></thead><tbody>"; // Removed (s)
           let rowCount = 0;
           querySnapshot.forEach(doc => {
-            if (rowCount < 10) { // <--- REMOVE THIS LINE
+            if (rowCount < 10) { // Limit to 10 rows
                 const data = doc.data();
                 scoreboardHtml += `<tr><td><span class="math-inline">\{data\.name\}</td\><td\></span>{data.guesses}</td><td><span class="math-inline">\{formatTime\(data\.time\)\}</td\><td\></span>{data.firstGuess || 'N/A'}</td></tr>`;
                 rowCount++;
-            } // <--- AND REMOVE THIS LINE
+            }
           });
           scoreboardHtml += "</tbody></table>";
           scoreboardTableContainer.innerHTML = scoreboardHtml;
@@ -519,8 +515,14 @@
         const time = Math.floor((Date.now() - startTime) / 1000);
 
         try {
-            await saveResult(name, guesses, time, firstGuessWord);
-            console.log("Score submission successful, closing modal.");
+            await addDoc(collection(db, "scoreboard"), {
+              name,
+              guesses,
+              time,
+              firstGuess,
+              timestamp: Date.now()
+            });
+            console.log("Score saved successfully!");
         } catch (error) {
             console.error("Error during score submission:", error);
             showAlert("Failed to save score. Please try again. (See console for details)");
@@ -538,7 +540,6 @@
         winScreen.classList.remove("hidden");
     }
 
-
     document.addEventListener("DOMContentLoaded", () => {
         console.log("DOMContentLoaded fired.");
         console.log("introScreen:", introScreen);
@@ -549,7 +550,6 @@
         console.log("scoreboardTableContainer:", scoreboardTableContainer);
         console.log("submitNameButton:", submitNameButton);
         console.log("cancelNameButton:", cancelNameButton);
-
 
         if (startGameButton) {
             startGameButton.addEventListener("click", startGame);
