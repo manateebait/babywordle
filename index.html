@@ -328,23 +328,27 @@
       }
     }
 
-    async function submitGuess() {
-      if (currentGuess.length !== wordLength) return;
-      if (!allowedWords.includes(currentGuess)) {
-        shakeRow();
-        showAlert("Not a baby name");
-        return;
-      }
-      if (currentRow === 0 && firstGuessWord === null) {
-          firstGuessWord = currentGuess;
-      }
+          async function submitGuess() {
+            if (currentGuess.length !== wordLength) return;
+          
 
-      if (currentRow === 0 && currentGuess.toLowerCase() === "horsey") {
-  localStorage.removeItem("babyWordleSolved");
-  showAlert("Reset complete");
-  restartGame();
-  return;
-}
+            if (currentRow === 0 && currentGuess.toLowerCase() === "horsey") {
+              localStorage.removeItem("babyWordleSolved");
+              showAlert("Reset complete");
+              restartGame();
+              return;
+            }
+          
+
+            if (!allowedWords.includes(currentGuess)) {
+              shakeRow();
+              showAlert("Not a baby name");
+              return;
+            }
+          
+            if (currentRow === 0 && firstGuessWord === null) {
+              firstGuessWord = currentGuess;
+            }
 
       const tiles = document.querySelectorAll(".tile");
       for (let i = 0; i < wordLength; i++) {
