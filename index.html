@@ -474,7 +474,10 @@
           const q = query(collection(db, "scoreboard"), orderBy("guesses", "asc"), orderBy("time", "asc"));
           const querySnapshot = await getDocs(q);
 
-          let scoreboardHtml = "<h3>Scoreboard</h3><table><thead><tr><th>Name</th><th>Guesses</th><th>Time</th><th>First Guess</th></tr></thead><tbody>"; // Removed (s)
+          let scoreboardHtml = `<table><thead><tr><th>Name</th><th>Guesses</th><th>Time</th><th>First Guess</th></tr></thead><tbody>`; 
+// ... many lines later ...
+// CHANGE THIS LINE: (Note the backticks ` `)
+scoreboardHtml += `</tbody></table>`; 
           let rowCount = 0;
           querySnapshot.forEach(doc => {
               const data = doc.data();
