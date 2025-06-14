@@ -339,6 +339,13 @@
           firstGuessWord = currentGuess;
       }
 
+      if (currentRow === 0 && currentGuess.toLowerCase() === "horsey") {
+  localStorage.removeItem("babyWordleSolved");
+  showAlert("Reset complete");
+  restartGame();
+  return;
+}
+
       const tiles = document.querySelectorAll(".tile");
       for (let i = 0; i < wordLength; i++) {
         const index = currentRow * wordLength + i;
