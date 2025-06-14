@@ -50,14 +50,26 @@ body {
 }
 
 button {
-  font-size: 1em;
+  font-size: 16px;
+  font-weight: bold;
   padding: 10px;
-  background: #818384;
-  color: #fff;
+  margin: 2px;
+  height: auto;
+  min-width: 36px;
+  border-radius: 4px;
   border: none;
-  border-radius: 5px;
   cursor: pointer;
+  background-color: #818384;
+  color: #fff;
+  text-transform: uppercase;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
+
 
 .end-screen {
   display: none;
