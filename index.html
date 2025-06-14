@@ -1,698 +1,588 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Baby Wordle (6 Letters)</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-  <style>
-    body { font-family: sans-serif; text-align: center; background: #121213; color: #fff; margin: 0; padding: 0 10px; }
-    #intro-screen, .modal {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(18, 18, 19, 0.95);
-        color: #fff;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        z-index: 10;
-        padding: 20px;
-        box-sizing: border-box;
-    }
-    .green-box { display: inline-block; background-color: #538d4e; color: #fff; padding: 10px 12px; font-weight: bold; font-size: 1.2em; border-radius: 4px; }
-    h1 { margin-top: 30px; margin-bottom: 10px; font-size: 1.8em; }
-    #game-board { display: grid; grid-template-columns: repeat(6, 60px); gap: 6px; justify-content: center; margin: 30px auto; max-width: 600px; }
-    .tile { width: 60px; height: 60px; border: 2px solid #3a3a3c; display: flex; justify-content: center; align-items: center; font-size: 2em; font-weight: bold; text-transform: uppercase; background-color: #121213; color: #fff; transition: background-color 0.5s ease, transform 0.3s ease; }
-    .tile.shake { animation: shake 0.5s ease; }
-    .tile.flip { animation: flip 0.5s ease forwards; }
-    @keyframes flip { 0% { transform: rotateX(0); } 50% { transform: rotateX(90deg); } 100% { transform: rotateX(0); } }
-    @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
-    .correct { background-color: #538d4e !important; border-color: #538d4e !important; }
-    .present { background-color: #b59f3b !important; border-color: #b59f3b !important; }
-    .absent { background-color: #3a3a3c !important; border-color: #3a3a3c !important; }
-    #keyboard { display: flex; flex-direction: column; align-items: center; gap: 8px; width: auto; max-width: 600px; margin: 20px auto; padding: 0 8px; box-sizing: border-box; }
-    button {
-      font-size: 1em;
-      font-weight: bold;
-      padding: 10px;
-      margin: 2px;
-      height: auto;
-      min-width: 36px;
-      border-radius: 4px;
-      border: none;
-      cursor: pointer;
-      background-color: #818384;
-      color: #fff;
-      text-transform: uppercase;
-      display: inline-flex;
-      justify-content: center;
-      align-items: center;
-    }
-    .keyboard-button { flex: none; }
-    .hidden { display: none !important; }
-    #alert { position: absolute; top: 10%; left: 50%; transform: translateX(-50%); background: #333; padding: 12px 24px; border-radius: 4px; font-size: 1.2em; display: none; z-index: 20; }
-    
-    /* Name Modal Specific Styles (Reverted to a more stable state) */
-    #name-modal .modal-content {
-        background:#1e1e1f;
-        padding: 20px;
-        border-radius: 8px;
-        text-align: center;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-        max-width: 90%;
-        width: 300px;
-        position: relative;
-        z-index: 11;
-        /* Reverting these as they caused issues on PC. Mobile often handles this better inherently. */
-        /* max-height: 80vh;  */
-        /* overflow-y: auto; */
-        /* overflow-x: hidden; */
-        /* display: flex; */
-        /* flex-direction: column; */
-        /* justify-content: space-between; */
-    }
-    #name-modal input[type="text"] {
-        padding: 10px;
-        width: calc(100% - 20px);
-        margin: 15px 0;
-        border: 1px solid #555;
-        border-radius: 4px;
-        background-color: #333;
-        color: #fff;
-        font-size: 1em;
-    }
-    #name-modal .modal-buttons {
-        margin-top: 15px; /* Keep a standard margin */
-        text-align: center;
-    }
-    #name-modal button {
-        margin: 5px;
-        padding: 10px 20px;
-    }
-    
-    /* Scoreboard Specific Styles */
-    #final-scoreboard-modal .modal-content {
-        background: #1e1e1e;
-        padding: 15px;
-        border-radius: 8px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-        max-width: 80%; /* Scoreboard content fills 80% of the modal */
-        width: 500px; /* Max width for desktop */
-        color: #eee;
-        display: flex;
-        flex-direction: column;
-        /* Removed max-height/overflow from here */
-    }
-    /* Dedicated container for the scrollable table */
-    #scoreboard-table-container {
-        max-height: 250px; /* Fixed height for scrolling (adjust as needed) */
-        overflow-y: auto; /* Enable vertical scroll */
-        overflow-x: hidden; /* Prevent horizontal scroll */
-        margin-bottom: 10px; /* Space between table and button */
-        flex-grow: 1; /* Allows it to take available height */
-    }
-    #scoreboard table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 10px;
-        font-size: 0.9em;
-        table-layout: fixed; /* Fixed table layout for better column control */
-    }
-    /* Column widths for better spacing */
-    #scoreboard th:nth-child(1), #scoreboard td:nth-child(1) { width: 30%; } /* Name */
-    #scoreboard th:nth-child(2), #scoreboard td:nth-child(2) { width: 15%; } /* Guesses */
-    #scoreboard th:nth-child(3), #scoreboard td:nth-child(3) { width: 20%; } /* Time */
-    #scoreboard th:nth-child(4), #scoreboard td:nth-child(4) { width: 35%; } /* First Guess */
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Baby Wordle (6 Letters)</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <style>
+    body { font-family: sans-serif; text-align: center; background: #121213; color: #fff; margin: 0; padding: 0 10px; }
+    #intro-screen, .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(18, 18, 19, 0.95);
+        color: #fff;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 10;
+        padding: 20px;
+        box-sizing: border-box;
+    }
+    .green-box { display: inline-block; background-color: #538d4e; color: #fff; padding: 10px 12px; font-weight: bold; font-size: 1.2em; border-radius: 4px; }
+    h1 { margin-top: 30px; margin-bottom: 10px; font-size: 1.8em; }
+    #game-board { display: grid; grid-template-columns: repeat(6, 60px); gap: 6px; justify-content: center; margin: 30px auto; max-width: 600px; }
+    .tile { width: 60px; height: 60px; border: 2px solid #3a3a3c; display: flex; justify-content: center; align-items: center; font-size: 2em; font-weight: bold; text-transform: uppercase; background-color: #121213; color: #fff; transition: background-color 0.5s ease, transform 0.3s ease; }
+    .tile.shake { animation: shake 0.5s ease; }
+    .tile.flip { animation: flip 0.5s ease forwards; }
+    @keyframes flip { 0% { transform: rotateX(0); } 50% { transform: rotateX(90deg); } 100% { transform: rotateX(0); } }
+    @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+    .correct { background-color: #538d4e !important; border-color: #538d4e !important; }
+    .present { background-color: #b59f3b !important; border-color: #b59f3b !important; }
+    .absent { background-color: #3a3a3c !important; border-color: #3a3a3c !important; }
+    #keyboard { display: flex; flex-direction: column; align-items: center; gap: 8px; width: auto; max-width: 600px; margin: 20px auto; padding: 0 8px; box-sizing: border-box; }
+    button {
+      font-size: 1em;
+      font-weight: bold;
+      padding: 10px;
+      margin: 2px;
+      height: auto;
+      min-width: 36px;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      background-color: #818384;
+      color: #fff;
+      text-transform: uppercase;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .keyboard-button { flex: none; }
+    .hidden { display: none !important; }
+    #alert { position: absolute; top: 10%; left: 50%; transform: translateX(-50%); background: #333; padding: 12px 24px; border-radius: 4px; font-size: 1.2em; display: none; z-index: 20; }
+    
+    /* Name Modal Specific Styles (Reverted to a more stable state) */
+    #name-modal .modal-content {
+        background:#1e1e1f;
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        max-width: 90%;
+        width: 300px;
+        position: relative;
+        z-index: 11;
+        /* Reverting these as they caused issues on PC. Mobile often handles this better inherently. */
+        /* max-height: 80vh;  */
+        /* overflow-y: auto; */
+        /* overflow-x: hidden; */
+        /* display: flex; */
+        /* flex-direction: column; */
+        /* justify-content: space-between; */
+    }
+    #name-modal input[type="text"] {
+        padding: 10px;
+        width: calc(100% - 20px);
+        margin: 15px 0;
+        border: 1px solid #555;
+        border-radius: 4px;
+        background-color: #333;
+        color: #fff;
+        font-size: 1em;
+    }
+    #name-modal .modal-buttons {
+        margin-top: 15px; /* Keep a standard margin */
+        text-align: center;
+    }
+    #name-modal button {
+        margin: 5px;
+        padding: 10px 20px;
+    }
+    
+    /* Scoreboard Specific Styles */
+    #final-scoreboard-modal .modal-content {
+        background: #1e1e1e;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        max-width: 80%; /* Scoreboard content fills 80% of the modal */
+        width: 500px; /* Max width for desktop */
+        color: #eee;
+        display: flex;
+        flex-direction: column;
+        /* Removed max-height/overflow from here */
+    }
+    /* Dedicated container for the scrollable table */
+    #scoreboard-table-container {
+        max-height: 250px; /* Fixed height for scrolling (adjust as needed) */
+        overflow-y: auto; /* Enable vertical scroll */
+        overflow-x: hidden; /* Prevent horizontal scroll */
+        margin-bottom: 10px; /* Space between table and button */
+        flex-grow: 1; /* Allows it to take available height */
+    }
+    #scoreboard table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+        font-size: 0.9em;
+        table-layout: fixed; /* Fixed table layout for better column control */
+    }
+    /* Column widths for better spacing */
+    #scoreboard th:nth-child(1), #scoreboard td:nth-child(1) { width: 30%; } /* Name */
+    #scoreboard th:nth-child(2), #scoreboard td:nth-child(2) { width: 15%; } /* Guesses */
+    #scoreboard th:nth-child(3), #scoreboard td:nth-child(3) { width: 20%; } /* Time */
+    #scoreboard th:nth-child(4), #scoreboard td:nth-child(4) { width: 35%; } /* First Guess */
 
-    #scoreboard th,
-    #scoreboard td {
-        padding: 8px 12px;
-        border: 1px solid #444;
-        text-align: center;
-    }
-    #scoreboard th {
-        background-color: #333;
-    }
-    #final-scoreboard-modal .modal-content h3 {
-        margin-top: 0;
-        margin-bottom: 10px;
-    }
-    #final-scoreboard-modal .modal-buttons {
-        margin-top: auto;
-        padding-top: 15px;
-        text-align: center;
-        flex-shrink: 0;
-    }
-
-
-    @media (max-width: 600px) {
-      .tile { width: 50px; height: 50px; }
-      #game-board { grid-template-columns: repeat(6, 50px); gap: 6px; justify-content: center; max-width: 360px; margin: 0 auto; }
-      #keyboard { max-width: 100%; padding: 0 4px; }
-      .keyboard-row { width: 100%; display: flex; justify-content: center; gap: 3px; flex-wrap: nowrap; }
-      .keyboard-row button { font-size: 20px; padding: 12px 0; min-width: auto; height: 48px; flex: 1; }
-      #key-Enter { font-size: 12px; flex: 1.2; }
-      #key-Backspace { font-size: 20px; flex: 1.2; }
-    }
-  </style>
-</head>
-<body>
-  <div id="intro-screen">
-    <h2>
-      <span class="green-box">B</span>
-      <span class="green-box">A</span>
-      <span class="green-box">B</span>
-      <span class="green-box">Y</span>
-      &nbsp;WORDLE
-    </h2>
-    <p>Guess the 6-letter name in 6 tries.</p>
-    <button id="startGameButton">Start Game</button>
-  </div>
-
-  <div id="alert">Not a baby name</div>
-
-  <h1>
-    <span class="green-box">B</span>
-    <span class="green-box">A</span>
-    <span class="green-box">B</span>
-    <span class="green-box">Y</span>
-    &nbsp;WORDLE
-  </h1>
-  <div id="game-board"></div>
-  <div id="keyboard"></div>
-
-  <div id="win-screen" class="modal hidden">
-    <div id="win-message-container"></div>
-    <button onclick="window.gameLogic.showScoreboard()">See Scoreboard</button>
-  </div>
-
-  <div id="lose-screen" class="modal hidden">
-    <h2>Better luck next time!</h2>
-    <button onclick="window.gameLogic.resetAndStartNewGame()">Try Again</button>
-  </div>
-
-  <div id="name-modal" class="modal hidden">
-    <div class="modal-content">
-      <h3>Enter your name to be on the Scoreboard!</h3>
-      <input type="text" id="player-name" placeholder="Your name">
-      <br>
-      <div class="modal-buttons">
-          <button id="submitNameButton" onclick="window.gameLogic.submitScore()">Submit</button>
-          <button id="cancelNameButton" onclick="window.gameLogic.closeNameModal()">No Thanks</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="final-scoreboard-modal" class="modal hidden">
-      <div class="modal-content">
-          <div id="scoreboard-table-container">
-              </div>
-          <div class="modal-buttons">
-              <button onclick="window.gameLogic.backToWinScreen()">Back to Win Screen</button>
-          </div>
-          <button onclick="window.gameLogic.resetGameAndStartNewSession()">Start New Session</button>       </div>
-  </div>
-
-  <script src="js/win-message.js"></script>
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyA4ns_9OCK-90S6XZ7mlf20L8aKyqaj1Do",
-      authDomain: "babystratton-e545f.firebaseapp.com",
-      projectId: "babystratton-e545f",
-      storageBucket: "babystratton-e545f.firebasestorage.app",
-      messagingSenderId: "747587536634",
-      appId: "1:747587536634:web:2d19e1e25afd482ca6ab43",
-      measurementId: "G-KBZ295JCMV"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    // --- SESSION-LEVEL VARIABLES ---
-    // These variables will persist across multiple games within the same browser session.
-    // They are initialized once when the page first loads.
-    let sessionStartTime = Date.now(); // Tracks the start of the entire session
-    let totalSessionGuesses = 0; // Accumulates all guesses from all games in the session
-    let firstOverallSessionGuess = null; // Stores the very first guess made in the session
-
-    // --- GAME-LEVEL VARIABLES ---
-    // These variables will be reset for each new game.
-    let gameStartTime = Date.now(); // Tracks the start of the current game
-    let currentGameGuesses = 0; // Tracks guesses for the current individual game
-    let firstCurrentGameGuess = null; // Stores the first guess for the current game
-    let targetWord = ""; // The word to guess for the current game
-
-    const wordLength = 6;
-    const maxGuesses = 6;
-    let currentRow = 0;
-    let currentGuess = "";
-    let allowedWords = [];
-    const defaultEncodedTarget = [69, 77, 77, 69, 84, 84]; // Default target word if words.json fails
-
-    const board = document.getElementById("game-board");
-    const keyboard = document.getElementById("keyboard");
-    const alertBox = document.getElementById("alert");
-    const introScreen = document.getElementById("intro-screen");
-    const winScreen = document.getElementById("win-screen");
-    const loseScreen = document.getElementById("lose-screen");
-    const nameModal = document.getElementById("name-modal");
-    const winMessageContainer = document.getElementById("win-message-container");
-    const playerNameInput = document.getElementById("player-name");
-    const startGameButton = document.getElementById("startGameButton");
-    const finalScoreboardModal = document.getElementById("final-scoreboard-modal");
-    const scoreboardTableContainer = document.getElementById("scoreboard-table-container"); 
-    const submitNameButton = document.getElementById("submitNameButton");
-    const cancelNameButton = document.getElementById("cancelNameButton");
-
-
-    function createBoard() {
-      for (let i = 0; i < maxGuesses * wordLength; i++) {
-        const tile = document.createElement("div");
-        tile.classList.add("tile");
-        board.appendChild(tile);
-      }
-    }
-
-    function resetKeyboardColors() {
-      document.querySelectorAll(".keyboard-button").forEach(button => {
-        if (button.id !== 'key-Enter' && button.id !== 'key-Backspace') {
-          button.classList.remove("correct", "present", "absent");
-          // You might need to explicitly set background-color if your CSS doesn't handle removing classes well
-          button.style.backgroundColor = ''; 
-        }
-      });
-    }
-
-    function createKeyboard() {
-      const rows = [
-        "QWERTYUIOP",
-        "ASDFGHJKL",
-        "EnterZXCVBNMBackspace"
-      ];
-
-      rows.forEach(row => {
-        const rowDiv = document.createElement("div");
-        rowDiv.classList.add("keyboard-row");
-        for (let key of row.match(/Enter|Backspace|./g)) {
-          const button = document.createElement("button");
-          button.textContent = key === 'Backspace' ? '⌫' : key;
-          button.id = `key-${key}`;
-          button.onclick = () => handleKey(key);
-          button.classList.add("keyboard-button");
-          rowDiv.appendChild(button);
-        }
-        keyboard.appendChild(rowDiv);
-      });
-    }
-
-    function handleKey(key) {
-      // Only allow key input if game is active (no modals are shown)
-      if (introScreen.classList.contains("hidden") && 
-          winScreen.classList.contains("hidden") && 
-          loseScreen.classList.contains("hidden") && 
-          nameModal.classList.contains("hidden") &&
-          finalScoreboardModal.classList.contains("hidden")) {
-
-        if (key === "Backspace") {
-          currentGuess = currentGuess.slice(0, -1);
-        } else if (key === "Enter") {
-          submitGuess();
-        } else if (key.length === 1 && key.match(/[a-zA-Z]/) && currentGuess.length < wordLength) { // Only allow letters
-          currentGuess += key.toLowerCase();
-        }
-        updateBoard();
-      }
-    }
-
-    function updateBoard() {
-      const tiles = document.querySelectorAll(".tile");
-      for (let i = 0; i < wordLength; i++) {
-        const index = currentRow * wordLength + i;
-        tiles[index].textContent = currentGuess[i] ? currentGuess[i].toUpperCase() : "";
-      }
-    }
-
-    function showAlert(message) {
-      alertBox.textContent = message;
-      alertBox.style.display = "block";
-      setTimeout(() => { alertBox.style.display = "none"; }, 1500);
-    }
-
-    function shakeRow() {
-      const tiles = document.querySelectorAll(".tile");
-      for (let i = 0; i < wordLength; i++) {
-        const tile = tiles[currentRow * wordLength + i];
-        tile.classList.add("shake");
-        setTimeout(() => tile.classList.remove("shake"), 500);
-      }
-    }
-
-    async function submitGuess() {
-      if (currentGuess.length !== wordLength) return;
-      if (!allowedWords.includes(currentGuess)) {
-        shakeRow();
-        showAlert("Not a baby name");
-        return;
-      }
-      
-      // --- CHANGES START HERE ---
-
-      // Set the first overall session guess (only once per page load)
-      if (firstOverallSessionGuess === null) {
-        firstOverallSessionGuess = currentGuess;
-      }
-      // Set the first guess for the current game
-      if (firstCurrentGameGuess === null) {
-        firstCurrentGameGuess = currentGuess;
-      }
-
-      const tiles = document.querySelectorAll(".tile");
-      for (let i = 0; i < wordLength; i++) {
-        const index = currentRow * wordLength + i;
-        const tile = tiles[index];
-        const letter = currentGuess[i];
-        setTimeout(() => {
-          tile.classList.add("flip");
-          if (letter === targetWord[i]) {
-            tile.classList.add("correct");
-            updateKey(letter, "correct");
-          } else if (targetWord.includes(letter)) {
-            tile.classList.add("present");
-            updateKey(letter, "present");
-          } else {
-            tile.classList.add("absent");
-            updateKey(letter, "absent");
-          }
-        }, i * 300);
-      }
-
-      setTimeout(() => {
-        // Increment guesses for the current game
-        currentGameGuesses++; 
-
-        if (currentGuess === targetWord) {
-          handleWin();
-          return;
-        }
-
-        // totalWrongGuesses is no longer needed as we track totalSessionGuesses and currentGameGuesses
-        currentRow++;
-        if (currentRow >= maxGuesses) {
-          loseScreen.classList.remove("hidden");
-          return;
-        }
-        currentGuess = "";
-      }, wordLength * 300);
-    }
-
-    function updateKey(letter, status) {
-      const key = document.getElementById(`key-${letter.toUpperCase()}`);
-      if (!key.classList.contains("correct")) {
-        if (status === "correct") {
-          key.classList.remove("present", "absent");
-          key.classList.add("correct");
-        } else if (status === "present" && !key.classList.contains("present")) {
-          key.classList.remove("absent");
-          key.classList.add("present");
-        } else if (!key.classList.contains("present")) {
-          key.classList.add("absent");
-        }
-      }
-    }
-
-    // This function starts a brand new game (first game of a session or after submitting score)
-    function startGame() {
-      introScreen.classList.add("hidden");
-      // Reset game-specific variables for the new game
-      resetCurrentGame();
-      // Make sure a new target word is set for this game
-      setTargetWordForNewGame();
-    }
-
-    // NEW: This function resets the game board and state for a new game without refreshing the page
-    function resetCurrentGame() {
-      currentRow = 0;
-      currentGuess = "";
-      currentGameGuesses = 0; // Reset guesses for the new game
-      firstCurrentGameGuess = null; // Reset first guess for the new game
-      gameStartTime = Date.now(); // Start timing for the new game
-
-      // Clear existing tile content and remove classes
-      const tiles = document.querySelectorAll(".tile");
-      tiles.forEach(tile => {
-        tile.textContent = "";
-        tile.classList.remove("correct", "present", "absent", "flip", "shake");
-      });
-
-      resetKeyboardColors(); // Reset keyboard button colors
-
-      // Hide all modals
-      winScreen.classList.add("hidden");
-      loseScreen.classList.add("hidden");
-      nameModal.classList.add("hidden");
-      finalScoreboardModal.classList.add("hidden");
-    }
-
-    // NEW: Function to pick a new target word for a new game
-    function setTargetWordForNewGame() {
-        if (allowedWords.length > 0) {
-            targetWord = allowedWords[Math.floor(Math.random() * allowedWords.length)];
-        } else {
-            targetWord = String.fromCharCode(...defaultEncodedTarget).toLowerCase();
-            console.warn("words.json is empty or failed to load. Using default target word.");
-        }
-        console.log("New target word for this game:", targetWord); // For debugging
+    #scoreboard th,
+    #scoreboard td {
+        padding: 8px 12px;
+        border: 1px solid #444;
+        text-align: center;
+    }
+    #scoreboard th {
+        background-color: #333;
+    }
+    #final-scoreboard-modal .modal-content h3 {
+        margin-top: 0;
+        margin-bottom: 10px;
+    }
+    #final-scoreboard-modal .modal-buttons {
+        margin-top: auto;
+        padding-top: 15px;
+        text-align: center;
+        flex-shrink: 0;
     }
 
 
-    // NEW: This function replaces the old `restartGame()` that reloaded the page
-    function resetAndStartNewGame() {
-      // Before resetting, accumulate the guesses from the just-finished (lost) game
-      totalSessionGuesses += maxGuesses; // If lost, all 6 guesses were used
-      console.log(`Total session guesses after loss: ${totalSessionGuesses}`);
-      
-      resetCurrentGame(); // Reset the board and game variables
-      setTargetWordForNewGame(); // Get a new word for the next game
-    }
+    @media (max-width: 600px) {
+      .tile { width: 50px; height: 50px; }
+      #game-board { grid-template-columns: repeat(6, 50px); gap: 6px; justify-content: center; max-width: 360px; margin: 0 auto; }
+      #keyboard { max-width: 100%; padding: 0 4px; }
+      .keyboard-row { width: 100%; display: flex; justify-content: center; gap: 3px; flex-wrap: nowrap; }
+      .keyboard-row button { font-size: 20px; padding: 12px 0; min-width: auto; height: 48px; flex: 1; }
+      #key-Enter { font-size: 12px; flex: 1.2; }
+      #key-Backspace { font-size: 20px; flex: 1.2; }
+    }
+  </style>
+</head>
+<body>
+  <div id="intro-screen">
+    <h2>
+      <span class="green-box">B</span>
+      <span class="green-box">A</span>
+      <span class="green-box">B</span>
+      <span class="green-box">Y</span>
+      &nbsp;WORDLE
+    </h2>
+    <p>Guess the 6-letter name in 6 tries.</p>
+    <button id="startGameButton">Start Game</button>
+  </div>
 
-    function handleWin() {
-        console.log("handleWin triggered");
-        // Accumulate guesses from the current winning game into session total
-        totalSessionGuesses += currentGameGuesses; 
-        console.log(`Total session guesses after win: ${totalSessionGuesses}`);
+  <div id="alert">Not a baby name</div>
 
-        if (typeof WIN_MESSAGE !== 'undefined') {
-            winMessageContainer.innerHTML = WIN_MESSAGE;
-        } else {
-            winMessageContainer.innerHTML = "You Win!";
-        }
-        winScreen.classList.remove("hidden");
-        openNameModal();
-    }
+  <h1>
+    <span class="green-box">B</span>
+    <span class="green-box">A</span>
+    <span class="green-box">B</span>
+    <span class="green-box">Y</span>
+    &nbsp;WORDLE
+  </h1>
+  <div id="game-board"></div>
+  <div id="keyboard"></div>
 
-    function openNameModal() {
-        console.log("openNameModal called!");
-        nameModal.classList.remove("hidden");
-        playerNameInput.focus();
-        playerNameInput.value = ''; // Clear input on open
-        // Ensure buttons are enabled when modal opens
-        if (submitNameButton) submitNameButton.disabled = false;
-        if (cancelNameButton) cancelNameButton.disabled = false;
-        finalScoreboardModal.classList.add("hidden");
-    }
+  <div id="win-screen" class="modal hidden">
+    <div id="win-message-container"></div>
+    <button onclick="window.gameLogic.showScoreboard()">See Scoreboard</button>
+  </div>
 
-    function closeNameModal() {
-        console.log("closeNameModal called!");
-        nameModal.classList.add("hidden");
-        playerNameInput.value = ''; // Clear input field
-        // Optionally disable buttons here to prevent immediate re-clicks after closing
-        if (submitNameButton) submitNameButton.disabled = true;
-        if (cancelNameButton) cancelNameButton.disabled = true;
-    }
+  <div id="lose-screen" class="modal hidden">
+    <h2>Better luck next time!</h2>
+    <button onclick="window.gameLogic.restartGame()">Try Again</button>
+  </div>
 
-    async function saveResult(name, guesses, time, firstGuess) {
-      try {
-        await addDoc(collection(db, "scoreboard"), {
-          name,
-          guesses,
-          time,
-          firstGuess,
-          timestamp: Date.now()
-        });
-        console.log("Score saved successfully!");
-      } catch (e) {
-        console.error("Error adding document: ", e);
-        throw e;
-        // --- CHANGES END HERE ---
-      }
-    }
+  <div id="name-modal" class="modal hidden">
+    <div class="modal-content">
+      <h3>Enter your name to be on the Scoreboard!</h3>
+      <input type="text" id="player-name" placeholder="Your name">
+      <br>
+      <div class="modal-buttons">
+          <button id="submitNameButton" onclick="window.gameLogic.submitScore()">Submit</button>
+          <button id="cancelNameButton" onclick="window.gameLogic.closeNameModal()">No Thanks</button>
+      </div>
+    </div>
+  </div>
 
-    // Helper function to format time in M:SS
-    function formatTime(seconds) {
-        const minutes = Math.floor(seconds / 60);
-        const remainingSeconds = seconds % 60;
-        const formattedMinutes = String(minutes).padStart(1, '0');
-        const formattedSeconds = String(remainingSeconds).padStart(2, '0');
-        return `${formattedMinutes}:${formattedSeconds}`;
-    }
+  <div id="final-scoreboard-modal" class="modal hidden">
+      <div class="modal-content">
+          <div id="scoreboard-table-container">
+              </div>
+          <div class="modal-buttons">
+              <button onclick="window.gameLogic.backToWinScreen()">Back to Win Screen</button>
+          </div>
+      </div>
+  </div>
 
-    // showScoreboard function to be called by button
-    async function showScoreboard() {
-      console.log("showScoreboard called!");
-      try {
-          if (!scoreboardTableContainer || !finalScoreboardModal) {
-              console.error("Error: Scoreboard elements not found in DOM.");
-              showAlert("Error: Scoreboard display area not found.");
-              return;
-          }
+  <script src="js/win-message.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-          const q = query(collection(db, "scoreboard"), orderBy("guesses", "asc"), orderBy("time", "asc"));
-          const querySnapshot = await getDocs(q);
+    const firebaseConfig = {
+      apiKey: "AIzaSyA4ns_9OCK-90S6XZ7mlf20L8aKyqaj1Do",
+      authDomain: "babystratton-e545f.firebaseapp.com",
+      projectId: "babystratton-e545f",
+      storageBucket: "babystratton-e545f.firebasestorage.app",
+      messagingSenderId: "747587536634",
+      appId: "1:747587536634:web:2d19e1e25afd482ca6ab43",
+      measurementId: "G-KBZ295JCMV"
+    };
 
-          let scoreboardHtml = "<h3>Scoreboard</h3><table><thead><tr><th>Name</th><th>Guesses</th><th>Time</th><th>First Guess</th></tr></thead><tbody>";
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let startTime = Date.now();
+    let totalWrongGuesses = 0;
+    let firstGuessWord = null;
+    const wordLength = 6;
+    const maxGuesses = 6;
+    let currentRow = 0;
+    let currentGuess = "";
+    let allowedWords = [];
+    const encodedTarget = [69, 77, 77, 69, 84, 84];
+    const targetWord = String.fromCharCode(...encodedTarget).toLowerCase();
+
+    const board = document.getElementById("game-board");
+    const keyboard = document.getElementById("keyboard");
+    const alertBox = document.getElementById("alert");
+    const introScreen = document.getElementById("intro-screen");
+    const winScreen = document.getElementById("win-screen");
+    const loseScreen = document.getElementById("lose-screen");
+    const nameModal = document.getElementById("name-modal");
+    const winMessageContainer = document.getElementById("win-message-container");
+    const playerNameInput = document.getElementById("player-name");
+    const startGameButton = document.getElementById("startGameButton");
+    const finalScoreboardModal = document.getElementById("final-scoreboard-modal");
+    const scoreboardTableContainer = document.getElementById("scoreboard-table-container"); 
+    const submitNameButton = document.getElementById("submitNameButton");
+    const cancelNameButton = document.getElementById("cancelNameButton");
+
+
+    function createBoard() {
+      for (let i = 0; i < maxGuesses * wordLength; i++) {
+        const tile = document.createElement("div");
+        tile.classList.add("tile");
+        board.appendChild(tile);
+      }
+    }
+
+    function createKeyboard() {
+      const rows = [
+        "QWERTYUIOP",
+        "ASDFGHJKL",
+        "EnterZXCVBNMBackspace"
+      ];
+
+      rows.forEach(row => {
+        const rowDiv = document.createElement("div");
+        rowDiv.classList.add("keyboard-row");
+        for (let key of row.match(/Enter|Backspace|./g)) {
+          const button = document.createElement("button");
+          button.textContent = key === 'Backspace' ? '⌫' : key;
+          button.id = `key-${key}`;
+          button.onclick = () => handleKey(key);
+          button.classList.add("keyboard-button");
+          rowDiv.appendChild(button);
+        }
+        keyboard.appendChild(rowDiv);
+      });
+    }
+
+    function handleKey(key) {
+      if (key === "Backspace") {
+        currentGuess = currentGuess.slice(0, -1);
+      } else if (key === "Enter") {
+        submitGuess();
+      } else if (key.length === 1 && currentGuess.length < wordLength) {
+        currentGuess += key.toLowerCase();
+      }
+      updateBoard();
+    }
+
+    function updateBoard() {
+      const tiles = document.querySelectorAll(".tile");
+      for (let i = 0; i < wordLength; i++) {
+        const index = currentRow * wordLength + i;
+        tiles[index].textContent = currentGuess[i] ? currentGuess[i].toUpperCase() : "";
+      }
+    }
+
+    function showAlert(message) {
+      alertBox.textContent = message;
+      alertBox.style.display = "block";
+      setTimeout(() => { alertBox.style.display = "none"; }, 1500);
+    }
+
+    function shakeRow() {
+      const tiles = document.querySelectorAll(".tile");
+      for (let i = 0; i < wordLength; i++) {
+        const tile = tiles[currentRow * wordLength + i];
+        tile.classList.add("shake");
+        setTimeout(() => tile.classList.remove("shake"), 500);
+      }
+    }
+
+    async function submitGuess() {
+      if (currentGuess.length !== wordLength) return;
+      if (!allowedWords.includes(currentGuess)) {
+        shakeRow();
+        showAlert("Not a baby name");
+        return;
+      }
+      if (currentRow === 0 && firstGuessWord === null) {
+          firstGuessWord = currentGuess;
+      }
+
+      const tiles = document.querySelectorAll(".tile");
+      for (let i = 0; i < wordLength; i++) {
+        const index = currentRow * wordLength + i;
+        const tile = tiles[index];
+        const letter = currentGuess[i];
+        setTimeout(() => {
+          tile.classList.add("flip");
+          if (letter === targetWord[i]) {
+            tile.classList.add("correct");
+            updateKey(letter, "correct");
+          } else if (targetWord.includes(letter)) {
+            tile.classList.add("present");
+            updateKey(letter, "present");
+          } else {
+            tile.classList.add("absent");
+            updateKey(letter, "absent");
+          }
+        }, i * 300);
+      }
+
+      setTimeout(() => {
+        if (currentGuess === targetWord) {
+          handleWin();
+          return;
+        }
+
+        totalWrongGuesses++;
+        currentRow++;
+        if (currentRow >= maxGuesses) {
+          loseScreen.classList.remove("hidden");
+          return;
+        }
+        currentGuess = "";
+      }, wordLength * 300);
+    }
+
+    function updateKey(letter, status) {
+      const key = document.getElementById(`key-${letter.toUpperCase()}`);
+      if (!key.classList.contains("correct")) {
+        if (status === "correct") {
+          key.classList.remove("present", "absent");
+          key.classList.add("correct");
+        } else if (status === "present" && !key.classList.contains("present")) {
+          key.classList.remove("absent");
+          key.classList.add("present");
+        } else if (!key.classList.contains("present")) {
+          key.classList.add("absent");
+        }
+      }
+    }
+
+    function startGame() {
+      introScreen.classList.add("hidden");
+      startTime = Date.now();
+      totalWrongGuesses = 0;
+      firstGuessWord = null;
+      currentRow = 0;
+      currentGuess = "";
+    }
+
+    function restartGame() {
+      window.location.reload();
+    }
+
+    function handleWin() {
+        console.log("handleWin triggered");
+        if (typeof WIN_MESSAGE !== 'undefined') {
+            winMessageContainer.innerHTML = WIN_MESSAGE;
+        } else {
+            winMessageContainer.innerHTML = "You Win!";
+        }
+        winScreen.classList.remove("hidden");
+        openNameModal();
+    }
+
+    function openNameModal() {
+        console.log("openNameModal called!");
+        nameModal.classList.remove("hidden");
+        playerNameInput.focus();
+        playerNameInput.value = ''; // Clear input on open
+        // Ensure buttons are enabled when modal opens
+        if (submitNameButton) submitNameButton.disabled = false;
+        if (cancelNameButton) cancelNameButton.disabled = false;
+        finalScoreboardModal.classList.add("hidden");
+    }
+
+    function closeNameModal() {
+        console.log("closeNameModal called!");
+        nameModal.classList.add("hidden");
+        playerNameInput.value = ''; // Clear input field
+        // Optionally disable buttons here to prevent immediate re-clicks after closing
+        if (submitNameButton) submitNameButton.disabled = true;
+        if (cancelNameButton) cancelNameButton.disabled = true;
+    }
+
+    async function saveResult(name, guesses, time, firstGuess) {
+      try {
+        await addDoc(collection(db, "scoreboard"), {
+          name,
+          guesses,
+          time,
+          firstGuess,
+          timestamp: Date.now()
+        });
+        console.log("Score saved successfully!");
+      } catch (e) {
+        console.error("Error adding document: ", e);
+        throw e;
+      }
+    }
+
+    // Helper function to format time in M:SS
+    function formatTime(seconds) {
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        const formattedMinutes = String(minutes).padStart(1, '0'); // No leading zero if single digit for minutes
+        const formattedSeconds = String(remainingSeconds).padStart(2, '0'); // Always two digits for seconds
+        return `${formattedMinutes}:${formattedSeconds}`;
+    }
+
+    // showScoreboard function to be called by button
+    async function showScoreboard() {
+      console.log("showScoreboard called!");
+      try {
+          if (!scoreboardTableContainer || !finalScoreboardModal) {
+              console.error("Error: Scoreboard elements not found in DOM.");
+              showAlert("Error: Scoreboard display area not found.");
+              return;
+          }
+
+          const q = query(collection(db, "scoreboard"), orderBy("guesses", "asc"), orderBy("time", "asc"));
+          const querySnapshot = await getDocs(q);
+
+          let scoreboardHtml = "<h3>Scoreboard</h3><table><thead><tr><th>Name</th><th>Guesses</th><th>Time (s)</th><th>First Guess</th></tr></thead><tbody>";
           querySnapshot.forEach(doc => {
                 const data = doc.data();
                 // Use formatTime for the time column
                 scoreboardHtml += `<tr><td>${data.name}</td><td>${data.guesses}</td><td>${formatTime(data.time)}</td><td>${data.firstGuess || 'N/A'}</td></tr>`;
           });
 
-          scoreboardHtml += "</tbody></table>";
-          scoreboardTableContainer.innerHTML = scoreboardHtml; // Put content into the specific container
+          scoreboardHtml += "</tbody></table>";
+          scoreboardTableContainer.innerHTML = scoreboardHtml; // Put content into the specific container
 
-          // Hide other modals when scoreboard is shown
-          winScreen.classList.add("hidden");
-          loseScreen.classList.add("hidden");
-          nameModal.classList.add("hidden");
+          // Hide other modals when scoreboard is shown
+          winScreen.classList.add("hidden");
+          loseScreen.classList.add("hidden");
+          nameModal.classList.add("hidden");
 
-          finalScoreboardModal.classList.remove("hidden"); // Show the scoreboard modal
-          console.log("Scoreboard displayed successfully.");
-      } catch (error) {
-          console.error("Error fetching scoreboard:", error);
-          showAlert("Error loading scoreboard. Check console for details.");
-      }
-    }
+          finalScoreboardModal.classList.remove("hidden"); // Show the scoreboard modal
+          console.log("Scoreboard displayed successfully.");
+      } catch (error) {
+          console.error("Error fetching scoreboard:", error);
+          showAlert("Error loading scoreboard. Check console for details.");
+      }
+    }
 
-    async function submitScore() {
-        console.log("Submit button clicked!");
-        const name = playerNameInput.value.trim();
-        if (!name) {
-            showAlert("Please enter a name.");
-            return;
-        }
+    async function submitScore() {
+        console.log("Submit button clicked!");
+        const name = playerNameInput.value.trim();
+        if (!name) {
+            showAlert("Please enter a name.");
+            return;
+        }
 
-        // Disable buttons immediately to prevent double-submits
-        if (submitNameButton) submitNameButton.disabled = true;
-        if (cancelNameButton) cancelNameButton.disabled = true;
+        // Disable buttons immediately to prevent double-submits
+        if (submitNameButton) submitNameButton.disabled = true;
+        if (cancelNameButton) cancelNameButton.disabled = true;
 
-        // --- CHANGES START HERE ---
-        // We submit the accumulated session data
-        const guesses = totalSessionGuesses; // Total guesses over the session
-        const time = Math.floor((Date.now() - sessionStartTime) / 1000); // Total session time
-        const firstGuess = firstOverallSessionGuess; // The very first guess of the session
-        // --- CHANGES END HERE ---
+        const guesses = totalWrongGuesses + 1;
+        const time = Math.floor((Date.now() - startTime) / 1000);
 
-        try {
-            await saveResult(name, guesses, time, firstGuess);
-            console.log("Score submission successful, closing modal.");
-            
-            // --- CHANGES START HERE ---
-            // After submitting a score for the session, reset session-level stats
-            // to prepare for a completely new session if the user plays again later.
-            resetGameAndStartNewSession();
-            // --- CHANGES END HERE ---
+        try {
+            await saveResult(name, guesses, time, firstGuessWord);
+            console.log("Score submission successful, closing modal.");
+        } catch (error) {
+            console.error("Error during score submission:", error);
+            showAlert("Failed to save score. Please try again. (See console for details)");
+            // Re-enable buttons if submission fails so user can try again
+            if (submitNameButton) submitNameButton.disabled = false;
+            if (cancelNameButton) cancelNameButton.disabled = false;
+            return;
+        }
+        closeNameModal(); // Close the name modal after successful submission
+    }
 
-        } catch (error) {
-            console.error("Error during score submission:", error);
-            showAlert("Failed to save score. Please try again. (See console for details)");
-            // Re-enable buttons if submission fails so user can try again
-            if (submitNameButton) submitNameButton.disabled = false;
-            if (cancelNameButton) cancelNameButton.disabled = false;
-            return;
-        }
-        closeNameModal(); // Close the name modal after successful submission
-        resetCurrentGame(); // Reset the game board for a potential new game
-        setTargetWordForNewGame(); // Get a new word for the next game
-    }
-
-    // Function to go back from scoreboard to win screen
-    function backToWinScreen() {
-        console.log("Back to Win Screen button clicked.");
-        finalScoreboardModal.classList.add("hidden"); // Hide scoreboard
-        winScreen.classList.remove("hidden"); // Show win screen
-    }
-
-    // NEW: Function to perform a full session reset (e.g., if user clicks a "Start New Session" button)
-    function resetGameAndStartNewSession() {
-        sessionStartTime = Date.now();
-        totalSessionGuesses = 0;
-        firstOverallSessionGuess = null;
-        resetCurrentGame(); // Reset current game state
-        setTargetWordForNewGame(); // Get a new word for the next game
-        // Hide all modals and show intro screen, effectively restarting the whole app
-        winScreen.classList.add("hidden");
-        loseScreen.classList.add("hidden");
-        nameModal.classList.add("hidden");
-        finalScoreboardModal.classList.add("hidden");
-        introScreen.classList.remove("hidden");
+    // Function to go back from scoreboard to win screen
+    function backToWinScreen() {
+        console.log("Back to Win Screen button clicked.");
+        finalScoreboardModal.classList.add("hidden"); // Hide scoreboard
+        winScreen.classList.remove("hidden"); // Show win screen
     }
 
 
-    document.addEventListener("DOMContentLoaded", () => {
-        console.log("DOMContentLoaded fired.");
-        
-        // Initial setup of board and keyboard, only once
-        createBoard();
-        createKeyboard();
-        document.addEventListener("keydown", e => handleKey(e.key));
+    document.addEventListener("DOMContentLoaded", () => {
+        console.log("DOMContentLoaded fired.");
+        console.log("introScreen:", introScreen);
+        console.log("winScreen:", winScreen);
+        console.log("loseScreen:", loseScreen);
+        console.log("nameModal:", nameModal);
+        console.log("finalScoreboardModal:", finalScoreboardModal);
+        console.log("scoreboardTableContainer:", scoreboardTableContainer);
+        console.log("submitNameButton:", submitNameButton);
+        console.log("cancelNameButton:", cancelNameButton);
 
-        if (startGameButton) {
-            startGameButton.addEventListener("click", startGame);
-        } else {
-            console.error("startGameButton not found!");
-        }
 
-        fetch("words.json")
-            .then(res => {
-                if (!res.ok) {
-                    throw new Error(`HTTP error! status: ${res.status}`);
-                }
-                return res.json();
-            })
-            .then(data => {
-                allowedWords = data.allowedWords.map(w => w.toLowerCase());
-                
-                // Set initial target word here, after words are loaded
-                setTargetWordForNewGame();
+        if (startGameButton) {
+            startGameButton.addEventListener("click", startGame);
+        } else {
+            console.error("startGameButton not found!");
+        }
 
-                introScreen.classList.remove("hidden"); // Show intro screen
-                winScreen.classList.add("hidden");
-                loseScreen.classList.add("hidden");
-                nameModal.classList.add("hidden");
-                finalScoreboardModal.classList.add("hidden");
-            })
-            .catch(error => console.error("Error loading words.json:", error));
-    });
+        fetch("words.json")
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                return res.json();
+            })
+            .then(data => {
+                allowedWords = data.allowedWords.map(w => w.toLowerCase());
+                createBoard();
+                createKeyboard();
+                document.addEventListener("keydown", e => handleKey(e.key));
 
-    window.gameLogic = {
-        startGame: startGame,
-        resetAndStartNewGame: resetAndStartNewGame, // Renamed from restartGame
-        submitScore: submitScore,
-        openNameModal: openNameModal,
-        closeNameModal: closeNameModal,
-        showScoreboard: showScoreboard,
-        handleKey: handleKey,
-        backToWinScreen: backToWinScreen,
-        resetGameAndStartNewSession: resetGameAndStartNewSession // New function for full session reset
-    };
-  </script>
+                introScreen.classList.remove("hidden");
+                winScreen.classList.add("hidden");
+                loseScreen.classList.add("hidden");
+                nameModal.classList.add("hidden");
+                finalScoreboardModal.classList.add("hidden");
+            })
+            .catch(error => console.error("Error loading words.json:", error));
+    });
+
+    window.gameLogic = {
+        startGame: startGame,
+        restartGame: restartGame,
+        submitScore: submitScore,
+        openNameModal: openNameModal,
+        closeNameModal: closeNameModal,
+        showScoreboard: showScoreboard,
+        handleKey: handleKey,
+        backToWinScreen: backToWinScreen
+    };
+  </script>
 </body>
 </html>
