@@ -359,24 +359,48 @@
             }
 
       const tiles = document.querySelectorAll(".tile");
+      const resultMarkers = Array(wordLength).fill(null);
+      const usedIndices = new Set();
+      const guessLetters = currentGuess.split('');
+      const targetLetters = targetWord.split('');
+      
+      // First pass: correct letters
+      for (let i = 0; i < wordLength; i++) {
+        if (guessLetters[i] === targetLetters[i]) {
+          resultMarkers[i] = 'correct';
+          usedIndices.add(i);
+        }
+      }
+      
+      // Second pass: present letters
+      for (let i = 0; i < wordLength; i++) {
+        if (resultMarkers[i]) continue;
+      
+        for (let j = 0; j < wordLength; j++) {
+          if (!usedIndices.has(j) && guessLetters[i] === targetLetters[j]) {
+            resultMarkers[i] = 'present';
+            usedIndices.add(j);
+            break;
+          }
+        }
+      
+        if (!resultMarkers[i]) {
+          resultMarkers[i] = 'absent';
+        }
+      }
+      
+      // Apply animations and styling
       for (let i = 0; i < wordLength; i++) {
         const index = currentRow * wordLength + i;
         const tile = tiles[index];
-        const letter = currentGuess[i];
+        const letter = guessLetters[i];
         setTimeout(() => {
           tile.classList.add("flip");
-          if (letter === targetWord[i]) {
-            tile.classList.add("correct");
-            updateKey(letter, "correct");
-          } else if (targetWord.includes(letter)) {
-            tile.classList.add("present");
-            updateKey(letter, "present");
-          } else {
-            tile.classList.add("absent");
-            updateKey(letter, "absent");
-          }
+          tile.classList.add(resultMarkers[i]);
+          updateKey(letter, resultMarkers[i]);
         }, i * 300);
       }
+
 
       setTimeout(() => {
         if (currentGuess === targetWord) {
